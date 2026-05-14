@@ -4,29 +4,21 @@ import { Handle, Position } from 'reactflow'
 const NoteNode = ({ data, selected }) => {
   return (
     <div className={`
-      px-4 py-2 rounded-lg border bg-white shadow-sm transition-all duration-200 min-w-[140px]
-      ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-surface-border hover:border-primary/50'}
+      w-28 h-28 flex flex-col items-center justify-center rounded-full border shadow-xl transition-all duration-200 text-center p-3
+      ${selected 
+        ? 'border-amber-500 ring-4 ring-amber-500/20 scale-105' 
+        : 'border-white/10 bg-[#0F172A]/80 backdrop-blur-xl text-slate-400 hover:border-amber-500/50'}
     `}>
-      {/* Input Handle (Top) */}
-      <Handle 
-        type="target" 
-        position={Position.Top} 
-        className="w-2 h-2 !bg-primary border-none" 
-      />
-
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-primary/20 flex-shrink-0" />
-        <span className="text-[14px] font-semibold text-ink whitespace-nowrap">
-          {data.label || 'Untitled Note'}
+      <Handle type="target" position={Position.Top} className="w-1.5 h-1.5 !bg-amber-500 border-none" />
+      
+      <div className="flex flex-col items-center gap-1">
+        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mb-1" />
+        <span className="text-[11px] font-black uppercase tracking-widest leading-tight">
+          {data.label || 'Note'}
         </span>
       </div>
 
-      {/* Output Handle (Bottom) */}
-      <Handle 
-        type="source" 
-        position={Position.Bottom} 
-        className="w-2 h-2 !bg-primary border-none" 
-      />
+      <Handle type="source" position={Position.Bottom} className="w-1.5 h-1.5 !bg-amber-500 border-none" />
     </div>
   )
 }
