@@ -2,12 +2,12 @@ import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { Layers } from 'lucide-react';
 
-const ClusterNode = ({ data, selected }) => {
+const ClusterNode = ({ data, selected, theme }) => {
   return (
     <div className={`w-32 h-32 flex flex-col items-center justify-center rounded-2xl border-2 transition-all shadow-2xl ${
       selected 
-        ? 'border-blue-500 ring-4 ring-blue-500/20 scale-105' 
-        : 'border-blue-500/30 bg-[#1E40AF]/20 backdrop-blur-xl'
+        ? 'border-blue-500 ring-4 ring-blue-500/20 scale-105 bg-blue-500/10' 
+        : `border-blue-500/30 backdrop-blur-xl ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-white'}`
     }`}>
       <Handle type="target" position={Position.Top} className="w-2 h-2 !bg-blue-500 border-none" />
       

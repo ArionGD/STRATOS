@@ -135,7 +135,7 @@ function Dashboard() {
         </div>
 
         <div className={`flex flex-col gap-6 items-center pt-6 border-t transition-colors ${theme === 'dark' ? 'border-white/5' : 'border-[#E2E8F0]'}`}>
-          <button className="p-2 text-slate-400 hover:text-white transition-colors hover:text-amber-500">
+          <button className="p-2 text-slate-400 transition-colors hover:text-amber-500">
             <HelpCircle size={22} />
           </button>
           <div className="w-10 h-10 rounded-full border-2 border-amber-500/40 p-0.5 shadow-lg shadow-amber-500/10">
@@ -299,7 +299,7 @@ function Dashboard() {
             <button className={`px-5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]'}`}>Manage</button>
             <button 
               onClick={() => setIsEditorOpen(!isEditorOpen)}
-              className={`px-5 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${isEditorOpen ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
+              className={`px-5 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${isEditorOpen ? (theme === 'dark' ? 'bg-white text-[#0F172A] shadow-xl' : 'bg-[#0F172A] text-white shadow-md') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
               Editor
             </button>
           </div>
