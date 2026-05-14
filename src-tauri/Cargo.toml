@@ -1,0 +1,23 @@
+[package]
+name = "stratos"
+version = "0.1.0"
+description = "A God Tier Ideation & Project Management Companion"
+authors = ["Stratos Team"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.1.0", features = [] }
+tauri-plugin-shell = "2.1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+[profile.release]
+panic = "abort" # Strip unnecessary code
+codegen-units = 1 # Optimize for size
+lto = true # Link Time Optimization
+opt-level = "s" # Optimize for size
+strip = true # Strip symbols
