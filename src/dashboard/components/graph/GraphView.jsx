@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow'
 import FlowChartView from './flow/FlowChartView'
-import NodeGraphView from './node/NodeGraphView'
+import NodeGraphSymmetryView from './node/NodeGraphSymmetryView'
 import ListView from './list/ListView'
 import CommandBar from './CommandBar'
+import { NoteService } from '../../../services/NoteService'
+import { WorkspaceService } from '../../../services/WorkspaceService'
 
 const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode }) => {
   const [displayMode, setDisplayMode] = useState('chart')
@@ -14,21 +16,36 @@ const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, s
   const [nodeType, setNodeType] = useState('note')
 
   // Shared Add Node Logic
-  const handleAddNode = useCallback(() => {
+  const handleAddNode = useCallback(async () => {
     if (!newNodeName || !selectedParentId) return;
+    
+    // SAFETY RAIL: Prevent crash if workspace context is missing
+    if (!activeWorkspace || !activeWorkspace.id) {
+      console.warn('⚠️ Cannot create node: No active workspace context found.');
+      return;
+    }
+
     const parentNode = nodes.find(n => n.id === selectedParentId);
     if (!parentNode) return;
 
-    const newNodeId = `node-${Date.now()}`;
+    const newNodeId = `${nodeType}-${Date.now()}`;
     const newNode = {
       id: newNodeId,
       type: nodeType,
+      parentId: selectedParentId, // Track parent for persistence
       position: { 
-        x: parentNode.position.x + (Math.random() - 0.5) * 100, 
-        y: parentNode.position.y + 150 
+        x: parentNode.position.x + (Math.random() - 0.5) * 50, 
+        y: parentNode.position.y + 75 
       },
       data: { label: newNodeName, type: nodeType }
     };
+
+    // PERSIST TO DATABASE
+    if (nodeType === 'note') {
+      await NoteService.saveNote({ id: newNodeId, title: newNodeName, content: '' }, activeWorkspace.id, selectedParentId);
+    } else {
+      await WorkspaceService.createCluster(newNodeId, newNodeName, activeWorkspace.id, selectedParentId);
+    }
 
     const newEdge = {
       id: `e-${selectedParentId}-${newNodeId}`,
@@ -42,19 +59,69 @@ const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, s
     setEdges(eds => [...eds, newEdge]);
     setNewNodeName('');
     setSelectedParentId('');
-  }, [newNodeName, selectedParentId, nodes, nodeType]);
+  }, [newNodeName, selectedParentId, nodes, nodeType, activeWorkspace]);
 
-  // Sync with workspace
+  // Sync with workspace (Fetch from DB)
   useEffect(() => {
     if (!activeWorkspace) return;
-    const rootId = 'root-node';
-    setNodes([{
-      id: rootId,
-      type: 'workspace',
-      position: { x: 400, y: 50 },
-      data: { label: activeWorkspace.name }
-    }]);
-    setEdges([]);
+    
+    const loadArchitecture = async () => {
+      const { clusters, notes } = await NoteService.getWorkspaceData(activeWorkspace.id);
+      
+      const rootId = 'root-node';
+      const rootNode = {
+        id: rootId,
+        type: 'workspace',
+        position: { x: 400, y: 50 },
+        data: { label: activeWorkspace.name }
+      };
+
+      const newNodes = [rootNode];
+      const newEdges = [];
+
+      // Map Clusters to Nodes
+      clusters.forEach((c, idx) => {
+        const id = c.id;
+        newNodes.push({
+          id,
+          type: 'cluster',
+          parentId: c.parent_id,
+          position: { x: 300 + (idx * 100), y: 150 },
+          data: { label: c.name, type: 'cluster' }
+        });
+        newEdges.push({
+          id: `e-${c.parent_id}-${id}`,
+          source: c.parent_id,
+          target: id,
+          animated: true,
+          style: { stroke: '#F59E0B', strokeWidth: 2, opacity: 0.3 }
+        });
+      });
+
+      // Map Notes to Nodes
+      notes.forEach((n, idx) => {
+        const id = n.id;
+        newNodes.push({
+          id,
+          type: 'note',
+          parentId: n.parent_id,
+          position: { x: 300 + (idx * 75), y: 250 },
+          data: { label: n.title, type: 'note' }
+        });
+        newEdges.push({
+          id: `e-${n.parent_id}-${id}`,
+          source: n.parent_id,
+          target: id,
+          animated: true,
+          style: { stroke: '#3B82F6', strokeWidth: 2, opacity: 0.3 }
+        });
+      });
+
+      setNodes(newNodes);
+      setEdges(newEdges);
+    };
+
+    loadArchitecture();
   }, [activeWorkspace, theme]);
 
   return (
@@ -101,7 +168,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, s
         )}
         
         {displayMode === 'node' && (
-          <NodeGraphView 
+          <NodeGraphSymmetryView 
             theme={theme}
             activeWorkspace={activeWorkspace}
             nodes={nodes}

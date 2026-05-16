@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Layers, ChevronRight, Box } from 'lucide-react'
 
@@ -10,7 +10,7 @@ const ListItem = ({ node, nodes, edges, depth, theme, activeNode, onNodeClick })
       .filter(Boolean)
   }, [node.id, nodes, edges])
 
-  const [isOpen, setIsOpen] = React.useState(true)
+  const [isOpen, setIsOpen] = useState(true)
   const isCluster = node.data?.type === 'cluster'
   const isWorkspace = node.type === 'workspace'
   const isSelected = activeNode?.id === node.id

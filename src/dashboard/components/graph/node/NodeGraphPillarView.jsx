@@ -10,9 +10,9 @@ import 'reactflow/dist/style.css';
 import RootNode from './components/RootNode';
 import BranchNode from './components/BranchNode';
 
-const SYSTEM_VERSION = "1.0.5";
+const SYSTEM_VERSION = "1.2.2";
 
-const NodeGraphView = ({ 
+const NodeGraphPillarView = ({ 
   theme, 
   nodes, 
   edges, 
@@ -46,27 +46,27 @@ const NodeGraphView = ({
     setIsEditorOpen(true);
   };
 
-  // Vertical Pillar Alignment: Simple, tight vertical stacking
+  // Stable Auto-Focus
   useEffect(() => {
     if (!flow || !flow.fitView) return;
     const timer = setTimeout(() => {
       try {
         flow.fitView({ 
           duration: 800, 
-          padding: 0.2, // Standard padding
+          padding: 0.15,
           minZoom: 0.5,
           maxZoom: 1.0
         });
       } catch (e) {
-        console.warn('Vertical alignment delayed');
+        console.warn('Layout fit failed');
       }
-    }, 500);
+    }, 400);
     return () => clearTimeout(timer);
   }, [nodes.length, edges.length, isEditorOpen, theme, flow]);
 
   let diagnosticError = "None";
 
-  // We transform the incoming flow nodes into Celestial/Atomic nodes with a radial layout
+  // Stable Radial Layout Engine (v1.2.2)
   const transformedNodes = useMemo(() => {
     try {
       if (!nodes || nodes.length === 0) return [];
@@ -76,15 +76,14 @@ const NodeGraphView = ({
         return nodes.map((n, i) => ({ 
           ...n, 
           type: 'branch', 
-          position: { x: 500, y: 100 + (i * 25) },
+          position: { x: 500 + 40 * Math.cos(i), y: 500 + 40 * Math.sin(i) },
           data: { ...(n.data || {}), label: n.data?.label || 'Node', theme } 
         }));
       }
 
       const centerX = 500;
-      const centerY = 100; // Start at the top
+      const centerY = 500;
       const visited = new Set();
-      let totalIndex = 0;
 
       const layoutNodes = (parentNodeId, depth) => {
         if (visited.has(parentNodeId)) return [];
@@ -103,13 +102,17 @@ const NodeGraphView = ({
 
         if (children.length === 0) return [];
 
-        return children.flatMap((child) => {
+        const radius = 45 + (depth * 35); 
+
+        return children.flatMap((child, index) => {
           if (!child) return [];
-          totalIndex++;
           
-          // ABSOLUTE VERTICAL PERPENDICULAR (X IS LOCKED TO 500)
-          const x = 500;
-          const y = centerY + (totalIndex * 25); 
+          // PERFECT SYMMETRY LOGIC
+          const angleStep = (2 * Math.PI) / children.length;
+          const angle = (index * angleStep) - (Math.PI / 2); // Start at Top
+          
+          const x = centerX + radius * Math.cos(angle);
+          const y = centerY + radius * Math.sin(angle);
 
           let sizeClass = "w-2.5 h-2.5"; 
           if (child.data?.type === 'cluster') sizeClass = "w-[15px] h-[15px]"; 
@@ -130,7 +133,7 @@ const NodeGraphView = ({
       const finalRoot = {
         ...rootNode,
         type: 'root',
-        position: { x: 500, y: centerY },
+        position: { x: centerX, y: centerY },
         data: { ...(rootNode.data || {}), label: rootNode.data?.label || 'Core', theme, sizeClass: "w-5 h-5" }
       };
 
@@ -138,11 +141,11 @@ const NodeGraphView = ({
       
       const connectedIds = new Set([finalRoot.id, ...branches.map(b => b.id)]);
       const disconnected = nodes.filter(n => !connectedIds.has(n.id)).map((n, i) => {
-        totalIndex++;
+        const angle = (i / 10) * 2 * Math.PI;
         return {
           ...n,
           type: 'branch',
-          position: { x: 500, y: centerY + (totalIndex * 25) },
+          position: { x: centerX + 50 * Math.cos(angle), y: centerY + 50 * Math.sin(angle) },
           data: { ...(n.data || {}), label: n.data?.label || 'Node', theme, sizeClass: "w-2.5 h-2.5" }
         };
       });
@@ -153,7 +156,7 @@ const NodeGraphView = ({
       return nodes.map((n, i) => ({ 
         ...n, 
         type: 'branch', 
-        position: { x: 500, y: 100 + (i * 25) },
+        position: { x: 500, y: 500 },
         data: { ...(n.data || {}), label: 'ERR: ' + n.data?.label, theme } 
       }));
     }
@@ -185,23 +188,26 @@ const NodeGraphView = ({
 
       {/* DEBUG OVERLAY */}
       <div className="absolute top-4 left-4 z-50 text-[10px] font-mono opacity-60 pointer-events-none text-red-500 bg-white/10 p-2 rounded backdrop-blur">
-        VERSION: {SYSTEM_VERSION} | Nodes: {transformedNodes.length} | Layout: Vertical Pillar
+        VERSION: {SYSTEM_VERSION} | Nodes: {transformedNodes.length} | Status: Stable Recovery
       </div>
 
       <ReactFlow
-        key={`rf-${SYSTEM_VERSION}-${transformedNodes.length}-${activeWorkspace?.id}`}
+        key={`rf-${SYSTEM_VERSION}-${nodes.length}`}
         nodes={transformedNodes}
         edges={finalEdges}
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant="dots" gap={30} size={1} color={theme === 'dark' ? '#475569' : '#cbd5e1'} />
+        <Background variant="dots" gap={40} size={1} color={theme === 'dark' ? '#0f172a' : '#475569'} />
         <Controls showInteractive={false} className={`!shadow-lg !border-none !p-1 !rounded-xl ${theme === 'dark' ? '!bg-[#0A0F1C]/80 !backdrop-blur-xl border !border-white/10' : '!bg-white border !border-[#E2E8F0]'}`} />
       </ReactFlow>
     </div>
   );
 };
 
-export default NodeGraphView;
+export default NodeGraphPillarView;

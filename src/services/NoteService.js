@@ -1,44 +1,74 @@
 /**
  * Stratos Note Service
- * Automatically handles storage between Desktop (SQLite) and Browser (LocalStorage)
+ * Automatically handles synchronization between UI and Backend (SQLite/Dexie).
  */
+import { invoke } from '@tauri-apps/api/core'
+import { browserDB } from './BrowserDB'
 
 const isTauri = !!window.__TAURI_INTERNALS__;
 
 export const NoteService = {
-  // Save a note (Draft)
-  saveNote: async (note) => {
+  // Save or Update a note
+  saveNote: async (note, workspaceId, parentId) => {
+    const noteId = note.id || `note_${Date.now()}`;
+    const pId = parentId || workspaceId;
+
+    const noteData = { 
+      id: noteId, 
+      title: note.title || 'Untitled Node', 
+      content: note.content || '', 
+      parent_id: pId,
+      workspace_id: workspaceId
+    };
+
     if (isTauri) {
       try {
-        const { invoke } = window.__TAURI_INTERNALS__.core;
-        return await invoke('save_note', { note }); // We'll implement this in Rust later
+        const result = await invoke('save_note', noteData);
+        console.log('📝 Note Synced to SQLite:', result);
+        return { success: true, id: noteId };
       } catch (err) {
-        console.error('Tauri Save Error:', err);
+        console.error('Tauri Sync Error:', err);
+        return { success: false, error: err };
       }
     } else {
-      // Browser Mock Logic
-      const notes = JSON.parse(localStorage.getItem('stratos_notes') || '[]');
-      const index = notes.findIndex(n => n.id === note.id);
-      
-      if (index >= 0) {
-        notes[index] = { ...note, updatedAt: new Date().toISOString() };
-      } else {
-        notes.push({ ...note, id: Date.now().toString(), createdAt: new Date().toISOString() });
+      // BROWSER MODE: Use Dexie (Upsert)
+      try {
+        await browserDB.notes.put(noteData);
+        console.log('📝 Note Synced to Browser DB');
+        return { success: true, id: noteId };
+      } catch (err) {
+        console.error('Dexie Sync Error:', err);
+        return { success: false, error: err };
       }
-      
-      localStorage.setItem('stratos_notes', JSON.stringify(notes));
-      console.log('📝 Note Saved to Browser DB:', note);
-      return { success: true, note };
     }
   },
 
-  // Get all notes
-  getNotes: async () => {
+  // Fetch all nodes for a specific workspace
+  getWorkspaceData: async (workspaceId) => {
     if (isTauri) {
-      // Will pull from SQLite
-      return []; 
+      try {
+        const [clusters, notes] = await invoke('get_workspace_data', { workspace_id: workspaceId });
+        return { clusters, notes };
+      } catch (err) {
+        console.error('Failed to fetch workspace data:', err);
+        return { clusters: [], notes: [] };
+      }
     } else {
-      return JSON.parse(localStorage.getItem('stratos_notes') || '[]');
+      // BROWSER MODE: Fetch from Dexie
+      try {
+        const clusters = await browserDB.clusters
+          .where('workspace_id')
+          .equals(workspaceId)
+          .toArray();
+        const notes = await browserDB.notes
+          .where('workspace_id')
+          .equals(workspaceId)
+          .toArray();
+        return { clusters, notes };
+      } catch (err) {
+        console.error('Browser Data Fetch Error:', err);
+        return { clusters: [], notes: [] };
+      }
     }
   }
 };

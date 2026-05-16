@@ -7,6 +7,19 @@ import ClusterView from './components/editor/ClusterView'
 import CreateWorkspaceModal from './components/modals/CreateWorkspaceModal'
 import SettingsView from './components/settings/SettingsView'
 import NotificationsView from './components/notifications/NotificationsView'
+import Profile from './pages/Profile'
+import Help from './pages/Help'
+import Feedback from './pages/Feedback'
+import Shortcuts from './pages/Shortcuts'
+import WhatsNew from './pages/WhatsNew'
+import Recommend from './pages/Recommend'
+import Guide from './pages/Guide'
+import InfoPage from './pages/Info'
+import Stats from './modules/Stats'
+import Notes from './modules/Notes'
+import Plan from './modules/Plan'
+import Vault from './modules/Vault'
+import System from './modules/System'
 import { WorkspaceService } from '../services/WorkspaceService'
 import { 
   LayoutGrid, 
@@ -23,10 +36,14 @@ import {
   ChevronDown,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  LogOut
 } from 'lucide-react'
-
+import { useNavigate } from 'react-router-dom'
+import useUserStore from '../store/useUserStore'
 function Dashboard() {
+  const navigate = useNavigate()
+  const { user, logout } = useUserStore()
   const [activeView, setActiveView] = useState('graph')
   const [theme, setTheme] = useState('light')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -50,7 +67,9 @@ function Dashboard() {
 
   const handleCreateWorkspace = async (name) => {
     const newWS = await WorkspaceService.createWorkspace(name)
-    setWorkspaces([...workspaces, newWS])
+    const updated = [...workspaces, newWS]
+    setWorkspaces(updated)
+    setActiveWorkspace(newWS) // INSTANT FOCUS
     setIsCreateModalOpen(false)
   }
 
@@ -58,7 +77,10 @@ function Dashboard() {
     const initWorkspaces = async () => {
       const data = await WorkspaceService.initialize()
       setWorkspaces(data)
-      setActiveWorkspace(data[0])
+      // SAFETY RAIL: Only set if data exists and no workspace is active
+      if (data && data.length > 0 && !activeWorkspace) {
+        setActiveWorkspace(data[0])
+      }
     }
     initWorkspaces()
   }, [])
@@ -109,38 +131,53 @@ function Dashboard() {
             {activeView === 'graph' && <div className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-[9px] flex items-center justify-center rounded-full border border-white shadow-sm font-bold">4</div>}
           </button>
           
-          <button className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]'}`}>
+          <button 
+            onClick={() => { setActiveView('stats'); setIsEditorOpen(false); }}
+            className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 ${activeView === 'stats' ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#0F172A] text-white shadow-lg') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]')}`}>
             <BarChart2 size={20} />
             <span className="text-[10px] font-semibold tracking-tight">Stats</span>
           </button>
           
-          <button className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]'}`}>
+          <button 
+            onClick={() => { setActiveView('notes'); setIsEditorOpen(false); }}
+            className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 ${activeView === 'notes' ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#0F172A] text-white shadow-lg') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]')}`}>
             <FileText size={20} />
             <span className="text-[10px] font-semibold tracking-tight">Notes</span>
           </button>
           
-          <button className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]'}`}>
+          <button 
+            onClick={() => { setActiveView('plan'); setIsEditorOpen(false); }}
+            className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 ${activeView === 'plan' ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#0F172A] text-white shadow-lg') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]')}`}>
             <Calendar size={20} />
             <span className="text-[10px] font-semibold tracking-tight">Plan</span>
           </button>
           
-          <button className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]'}`}>
+          <button 
+            onClick={() => { setActiveView('vault'); setIsEditorOpen(false); }}
+            className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 ${activeView === 'vault' ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#0F172A] text-white shadow-lg') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]')}`}>
             <Wallet size={20} />
             <span className="text-[10px] font-semibold tracking-tight">Vault</span>
           </button>
           
-          <button className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]'}`}>
+          <button 
+            onClick={() => { setActiveView('system'); setIsEditorOpen(false); }}
+            className={`w-14 h-14 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 ${activeView === 'system' ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#0F172A] text-white shadow-lg') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#F1F5F9]')}`}>
             <Settings size={20} />
             <span className="text-[10px] font-semibold tracking-tight">System</span>
           </button>
         </div>
 
         <div className={`flex flex-col gap-6 items-center pt-6 border-t transition-colors ${theme === 'dark' ? 'border-white/5' : 'border-[#E2E8F0]'}`}>
-          <button className="p-2 text-slate-400 transition-colors hover:text-amber-500">
+          <button 
+            onClick={() => { setActiveView('guide'); setIsEditorOpen(false); }}
+            className={`p-2 transition-colors hover:text-amber-500 ${activeView === 'guide' ? 'text-amber-500' : 'text-slate-400'}`}
+          >
             <HelpCircle size={22} />
           </button>
           <div className="w-10 h-10 rounded-full border-2 border-amber-500/40 p-0.5 shadow-lg shadow-amber-500/10">
-            <img className="w-full h-full rounded-full" src="https://ui-avatars.com/api/?name=Aditya&background=D97706&color=fff" alt="User" />
+            <div className="w-full h-full rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-[10px] font-black text-white">
+              {user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'ST'}
+            </div>
           </div>
         </div>
       </aside>
@@ -334,7 +371,15 @@ function Dashboard() {
                 <Bell size={20} />
                 <div className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-[#0F172A] shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
               </button>
-              <button className="p-2 text-slate-500 hover:text-white transition-colors"><Info size={20} /></button>
+              <button 
+                onClick={() => {
+                  setActiveView('info')
+                  setIsEditorOpen(false)
+                }}
+                className={`p-2 transition-colors relative group ${activeView === 'info' ? 'text-amber-500' : 'text-slate-500 hover:text-white'}`}
+              >
+                <Info size={20} />
+              </button>
             </div>
 
             <div className={`flex items-center rounded-full p-1 border relative w-[68px] h-[34px] transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0F172A]/80 border-white/10' : 'bg-[#F8FAFC] border-slate-200'}`}>
@@ -368,13 +413,17 @@ function Dashboard() {
               onClick={() => setIsDropdownLocked(!isDropdownLocked)}
             >
               <div className="text-right">
-                <div className={`text-sm font-black transition-colors ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>Aditya G.</div>
-                <div className="text-[11px] text-slate-500 font-bold tracking-tight">aditya@stratos.com</div>
+                <div className={`text-sm font-black transition-colors ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
+                  {user ? `${user.first_name} ${user.last_name}` : 'Guest User'}
+                </div>
+                <div className="text-[11px] text-slate-500 font-bold tracking-tight">
+                  {user ? user.email : 'guest@stratos.com'}
+                </div>
               </div>
               <div className="flex items-center gap-2 group cursor-pointer">
                 <div className="w-10 h-10 rounded-full border-2 border-amber-500/30 p-0.5 shadow-lg shadow-amber-500/20 group-hover:border-amber-500 transition-colors">
-                  <div className="w-full h-full rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-[10px] font-black text-white">
-                    AD
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-[10px] font-black text-white uppercase">
+                    {user ? `${user.first_name[0]}${user.last_name[0]}` : 'ST'}
                   </div>
                 </div>
                 <motion.div
@@ -401,6 +450,15 @@ function Dashboard() {
                       {['Profile', 'Help', 'Send feedback', 'Hints and shortcuts'].map(item => (
                         <button 
                           key={item} 
+                          onClick={() => {
+                            if (item === 'Profile') setActiveView('profile')
+                            if (item === 'Help') setActiveView('help')
+                            if (item === 'Send feedback') setActiveView('feedback')
+                            if (item === 'Hints and shortcuts') setActiveView('shortcuts')
+                            setIsEditorOpen(false)
+                            setIsProfileDropdownOpen(false)
+                            setIsDropdownLocked(false)
+                          }}
                           className={`w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
                             theme === 'dark' 
                               ? 'text-slate-400 hover:text-white hover:bg-white/5' 
@@ -410,7 +468,14 @@ function Dashboard() {
                           {item}
                         </button>
                       ))}
-                      <button className={`w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all flex items-center justify-between ${
+                      <button 
+                        onClick={() => {
+                          setActiveView('whats-new')
+                          setIsEditorOpen(false)
+                          setIsProfileDropdownOpen(false)
+                          setIsDropdownLocked(false)
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all flex items-center justify-between ${
                         theme === 'dark' 
                           ? 'text-slate-400 hover:text-white hover:bg-white/5' 
                           : 'text-slate-500 hover:text-[#0F172A] hover:bg-slate-100'
@@ -418,18 +483,32 @@ function Dashboard() {
                         What's new
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
                       </button>
-                      <button className={`w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+                      <button 
+                        onClick={() => {
+                          setActiveView('recommend')
+                          setIsEditorOpen(false)
+                          setIsProfileDropdownOpen(false)
+                          setIsDropdownLocked(false)
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
                         theme === 'dark' 
                           ? 'text-slate-400 hover:text-white hover:bg-white/5' 
                           : 'text-slate-500 hover:text-[#0F172A] hover:bg-slate-100'
                       }`}>
-                        Recommend Nuclino
+                        Recommend Stratos
                       </button>
                       <div className={`h-px my-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-100'}`}></div>
-                      <button className={`w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-bold text-red-500 transition-all ${
-                        theme === 'dark' ? 'hover:bg-red-500/10' : 'hover:bg-red-50'
-                      }`}>
+                      <button 
+                        onClick={() => {
+                          logout();
+                          navigate('/login');
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-bold text-red-500 transition-all flex items-center justify-between ${
+                          theme === 'dark' ? 'hover:bg-red-500/10' : 'hover:bg-red-50'
+                        }`}
+                      >
                         Log out
+                        <LogOut size={14} />
                       </button>
                     </div>
                   </motion.div>
@@ -487,6 +566,7 @@ function Dashboard() {
                         onClose={() => setIsEditorOpen(false)} 
                         theme={theme}
                         activeNode={activeNode}
+                        workspaceId={activeWorkspace?.id}
                       />
                     )}
                   </motion.div>
@@ -497,6 +577,32 @@ function Dashboard() {
             <SettingsView theme={theme} onClose={() => setActiveView('graph')} />
           ) : activeView === 'notifications' ? (
             <NotificationsView theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'profile' ? (
+            <Profile theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'help' ? (
+            <Help theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'feedback' ? (
+            <Feedback theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'shortcuts' ? (
+            <Shortcuts theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'whats-new' ? (
+            <WhatsNew theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'recommend' ? (
+            <Recommend theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'stats' ? (
+            <Stats theme={theme} />
+          ) : activeView === 'notes' ? (
+            <Notes theme={theme} />
+          ) : activeView === 'plan' ? (
+            <Plan theme={theme} />
+          ) : activeView === 'vault' ? (
+            <Vault theme={theme} />
+          ) : activeView === 'system' ? (
+            <System theme={theme} />
+          ) : activeView === 'guide' ? (
+            <Guide theme={theme} onClose={() => setActiveView('graph')} />
+          ) : activeView === 'info' ? (
+            <InfoPage theme={theme} onClose={() => setActiveView('graph')} />
           ) : null}
         </div>
       </main>

@@ -22,13 +22,20 @@ const BranchNode = ({ data, selected, theme }) => {
   
   return (
     <div className="flex flex-col items-center group">
-      {/* Atomic Dot */}
-      <div className={`
-        w-2.5 h-2.5 rounded-full transition-all duration-300
-        ${selected 
-          ? `${colors.dot} scale-150` 
-          : `bg-slate-500 ${colors.hover} scale-100`}
-      `}></div>
+      {/* Atomic Core Container */}
+      <div className="relative flex items-center justify-center">
+        <div className={`
+          rounded-full transition-all duration-300
+          ${data.sizeClass || (isCluster ? 'w-[15px] h-[15px]' : 'w-[10px] h-[10px]')}
+          ${selected 
+            ? `${colors.dot} scale-150` 
+            : `bg-slate-500 ${colors.hover} scale-100`}
+        `}></div>
+
+        {/* Center Handles - Locked to Core Center */}
+        <Handle type="target" position={Position.Top} className="!w-0 !h-0 !border-none !bg-transparent" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+        <Handle type="source" position={Position.Bottom} className="!w-0 !h-0 !border-none !bg-transparent" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+      </div>
 
       {/* Label */}
       <div className="mt-3 text-center">
@@ -40,10 +47,6 @@ const BranchNode = ({ data, selected, theme }) => {
           {data.label}
         </div>
       </div>
-
-      {/* Handles */}
-      <Handle type="target" position={Position.Top} className="opacity-0" />
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
     </div>
   );
 };

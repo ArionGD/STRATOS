@@ -8,7 +8,7 @@ import {
   Edit3
 } from 'lucide-react'
 
-const NotesEditor = ({ onClose, theme, activeNode }) => {
+const NotesEditor = ({ onClose, theme, activeNode, workspaceId }) => {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [status, setStatus] = useState('Draft')
@@ -24,7 +24,11 @@ const NotesEditor = ({ onClose, theme, activeNode }) => {
 
   const handleSave = async () => {
     setIsSaving(true)
-    await NoteService.saveNote({ title, content, status: 'Draft' })
+    await NoteService.saveNote(
+      { id: activeNode?.id, title, content }, 
+      workspaceId,
+      activeNode?.parentId || workspaceId
+    )
     
     setTimeout(() => {
       setIsSaving(false)
@@ -36,7 +40,11 @@ const NotesEditor = ({ onClose, theme, activeNode }) => {
   const handlePublish = async () => {
     setIsSaving(true)
     setStatus('Published')
-    await NoteService.saveNote({ title, content, status: 'Published' })
+    await NoteService.saveNote(
+      { id: activeNode?.id, title, content }, 
+      workspaceId,
+      activeNode?.parentId || workspaceId
+    )
     
     setTimeout(() => {
       setIsSaving(false)
