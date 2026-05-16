@@ -19,6 +19,7 @@ import {
   Search,
   Bell,
   Info,
+  Mic,
   ChevronDown,
   ChevronRight,
   Sun,
@@ -304,15 +305,25 @@ function Dashboard() {
             </button>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className={`flex rounded-full p-1 border relative w-16 h-8 transition-colors duration-500 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-[#F8FAFC] border-[#E2E8F0]'}`}>
-              <button onClick={() => setTheme('light')} className={`z-10 w-1/2 h-full flex items-center justify-center rounded-full transition-colors ${theme === 'light' ? 'text-[#0F172A]' : 'text-slate-500'}`}><Sun size={14} strokeWidth={2.5} /></button>
-              <button onClick={() => setTheme('dark')} className={`z-10 w-1/2 h-full flex items-center justify-center rounded-full transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-500'}`}><Moon size={14} strokeWidth={2.5} /></button>
-              <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full shadow-sm transition-all duration-300 ease-out ${theme === 'light' ? 'left-1 bg-white' : 'left-[calc(50%+2px)] bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]'}`} />
+          <div className="absolute left-1/2 -translate-x-1/2 z-50">
+            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+              theme === 'dark' ? 'bg-white/5 border-white/5 focus-within:border-amber-500/40' : 'bg-white border-slate-300 focus-within:border-amber-500/40 focus-within:shadow-sm'
+            }`}>
+              <input 
+                type="text" 
+                placeholder="Search architecture..." 
+                className={`bg-transparent border-none outline-none text-[12px] w-64 font-bold placeholder:text-slate-500 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}
+              />
+              <div className="flex items-center gap-1 border-l pl-2 border-slate-500/20">
+                <button className="p-1 text-slate-500 hover:text-amber-500 transition-colors"><Mic size={14} /></button>
+                <button className="p-1 text-slate-500 hover:text-amber-500 transition-colors"><Search size={14} /></button>
+              </div>
             </div>
+          </div>
 
+          <div className="flex items-center gap-6">
             <div className={`flex items-center gap-2 pr-4 border-r transition-colors ${theme === 'dark' ? 'border-white/10' : 'border-[#E2E8F0]'}`}>
-              <button className="p-2 text-slate-500 hover:text-white transition-colors"><Search size={20} /></button>
+              <div className={`w-[1px] h-6 mr-2 transition-colors ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`}></div>
               <button 
                 onClick={() => {
                   setActiveView('notifications')
@@ -324,6 +335,29 @@ function Dashboard() {
                 <div className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-[#0F172A] shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
               </button>
               <button className="p-2 text-slate-500 hover:text-white transition-colors"><Info size={20} /></button>
+            </div>
+
+            <div className={`flex items-center rounded-full p-1 border relative w-[68px] h-[34px] transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0F172A]/80 border-white/10' : 'bg-[#F8FAFC] border-slate-200'}`}>
+              {/* Sliding Pill */}
+              <motion.div 
+                animate={{ x: theme === 'dark' ? 34 : 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+                className={`absolute left-[5px] top-[5px] w-6 h-6 rounded-full shadow-lg z-0 ${theme === 'dark' ? 'bg-blue-600 shadow-blue-900/40' : 'bg-white shadow-slate-200'}`}
+              />
+              
+              <button 
+                onClick={() => setTheme('light')} 
+                className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-full transition-colors duration-300 ${theme === 'light' ? 'text-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                <Sun size={14} strokeWidth={2.5} />
+              </button>
+              
+              <button 
+                onClick={() => setTheme('dark')} 
+                className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-full transition-colors duration-300 ${theme === 'dark' ? 'text-white' : 'text-slate-500 hover:text-slate-400'}`}
+              >
+                <Moon size={14} strokeWidth={2.5} />
+              </button>
             </div>
             
             <div 

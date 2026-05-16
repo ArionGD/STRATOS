@@ -2,9 +2,10 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow'
 import FlowChartView from './flow/FlowChartView'
 import NodeGraphView from './node/NodeGraphView'
+import ListView from './list/ListView'
 import CommandBar from './CommandBar'
 
-const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes }) => {
+const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode }) => {
   const [displayMode, setDisplayMode] = useState('chart')
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -78,37 +79,72 @@ const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, s
         />
       </div>
 
-      {/* Visual Engines */}
-      {displayMode === 'chart' ? (
-        <FlowChartView 
-          theme={theme}
-          isEditorOpen={isEditorOpen}
-          activeWorkspace={activeWorkspace}
-          nodes={nodes}
-          setNodes={setNodes}
-          onNodesChange={onNodesChange}
-          edges={edges}
-          setEdges={setEdges}
-          onEdgesChange={onEdgesChange}
-          setActiveNode={setActiveNode}
-          setIsEditorOpen={setIsEditorOpen}
-          setDashboardNodes={setDashboardNodes}
-          displayMode={displayMode}
-        />
-      ) : (
-        <NodeGraphView 
-          theme={theme}
-          activeWorkspace={activeWorkspace}
-          nodes={nodes}
-          onNodesChange={onNodesChange}
-          edges={edges}
-          onEdgesChange={onEdgesChange}
-          displayMode={displayMode}
-          setActiveNode={setActiveNode}
-          setIsEditorOpen={setIsEditorOpen}
-          setDashboardNodes={setDashboardNodes}
-        />
-      )}
+      {/* Visualization Container - Relies on Dashboard's flex layout for the 50/50 split */}
+      <div className="absolute inset-0 w-full h-full">
+        {/* Visual Engines */}
+        {displayMode === 'chart' && (
+          <FlowChartView 
+            theme={theme}
+            isEditorOpen={isEditorOpen}
+            activeWorkspace={activeWorkspace}
+            nodes={nodes}
+            setNodes={setNodes}
+            onNodesChange={onNodesChange}
+            edges={edges}
+            setEdges={setEdges}
+            onEdgesChange={onEdgesChange}
+            setActiveNode={setActiveNode}
+            setIsEditorOpen={setIsEditorOpen}
+            setDashboardNodes={setDashboardNodes}
+            displayMode={displayMode}
+          />
+        )}
+        
+        {displayMode === 'node' && (
+          <NodeGraphView 
+            theme={theme}
+            activeWorkspace={activeWorkspace}
+            nodes={nodes}
+            onNodesChange={onNodesChange}
+            edges={edges}
+            onEdgesChange={onEdgesChange}
+            displayMode={displayMode}
+            setActiveNode={setActiveNode}
+            setIsEditorOpen={setIsEditorOpen}
+            setDashboardNodes={setDashboardNodes}
+            isEditorOpen={isEditorOpen}
+          />
+        )}
+
+
+        {displayMode === 'list' && (
+          <ListView 
+            theme={theme}
+            activeWorkspace={activeWorkspace}
+            nodes={nodes}
+            edges={edges}
+            activeNode={activeNode}
+            setActiveNode={setActiveNode}
+            setIsEditorOpen={setIsEditorOpen}
+            setDashboardNodes={setDashboardNodes}
+          />
+        )}
+
+        {displayMode === 'board' && (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-transparent">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-2xl ${theme === 'dark' ? 'bg-slate-800 shadow-black/50' : 'bg-white shadow-slate-200/50'}`}>
+              <span className="text-2xl opacity-60">🚧</span>
+            </div>
+            <h2 className={`text-xl font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
+              {displayMode} Engine
+            </h2>
+            <p className="text-xs font-bold tracking-widest uppercase text-amber-500">
+              Module Offline • Coming Soon
+            </p>
+          </div>
+        )}
+      </div>
+
     </div>
   )
 }

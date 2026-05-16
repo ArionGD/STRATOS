@@ -40,13 +40,15 @@ const NodeGraphView = ({
   // Adaptive Viewport: Auto-center and shift when editor opens
   useEffect(() => {
     const timer = setTimeout(() => {
-      fitView({ 
-        duration: 800, 
-        padding: isEditorOpen ? { top: 100, right: window.innerWidth / 2 + 100, bottom: 100, left: 100 } : 100,
-        minZoom: 0.4,
-        maxZoom: 1.2
-      });
-    }, 250);
+      if (fitView) {
+        fitView({ 
+          duration: 800, 
+          padding: 0.1,
+          minZoom: 0.5,
+          maxZoom: 1.8
+        });
+      }
+    }, 800); // Wait for framer-motion spring to settle
     return () => clearTimeout(timer);
   }, [isEditorOpen, theme, fitView]);
 

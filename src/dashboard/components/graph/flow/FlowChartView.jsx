@@ -43,11 +43,11 @@ const FlowChartView = ({
     const timer = setTimeout(() => {
       fitView({ 
         duration: 800, 
-        padding: isEditorOpen ? { top: 100, right: window.innerWidth / 2 + 100, bottom: 100, left: 100 } : 100,
-        minZoom: 0.2,
-        maxZoom: 1.0
+        padding: 0.1,
+        minZoom: 0.5,
+        maxZoom: 1.8
       })
-    }, 250)
+    }, 800) // Wait for framer-motion spring to settle
     return () => clearTimeout(timer)
   }, [isEditorOpen, theme, fitView])
 
