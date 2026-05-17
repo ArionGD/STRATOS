@@ -255,52 +255,124 @@ const Stats = ({ theme }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Workspace Density Chart */}
-        <div className={`lg:col-span-2 p-10 rounded-[3rem] border relative overflow-hidden flex flex-col justify-between min-h-[350px] ${
+        <div className={`lg:col-span-2 p-10 rounded-[3rem] border relative overflow-hidden flex flex-col justify-between min-h-[400px] ${
           isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
         }`}>
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="text-xl font-black uppercase tracking-widest">Workspace Density</h2>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Node concentration per active workspace environment</p>
-            </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-black uppercase tracking-widest">Workspace Density</h2>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Stacked node composition (Clusters vs. Notes) per active environment</p>
           </div>
           
-          <div className="h-64 flex items-end gap-6 px-4">
-            {stats.workspaces.map((ws, i) => {
-              const nodeCount = ws.clustersCount + ws.notesCount;
-              const maxCount = Math.max(...stats.workspaces.map(w => w.clustersCount + w.notesCount), 1);
-              const barHeight = Math.max(15, Math.round((nodeCount / maxCount) * 80));
-              return (
-                <div key={ws.id} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                  <div className={`text-[10px] font-black px-2 py-1 rounded border transition-opacity duration-300 opacity-0 group-hover:opacity-100 ${
-                    isDark ? 'bg-slate-900 border-white/10 text-blue-400' : 'bg-slate-50 border-slate-200 text-blue-600 shadow-sm'
-                  }`}>
-                    {nodeCount} Nodes
-                  </div>
-                  <motion.div 
-                    initial={{ height: 0 }}
-                    animate={{ height: `${barHeight}%` }}
-                    transition={{ delay: i * 0.05, duration: 1 }}
-                    className={`w-full rounded-t-xl transition-all hover:scale-105 cursor-pointer relative ${
-                      i % 2 === 0 
-                        ? 'bg-gradient-to-t from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/20' 
-                        : 'bg-gradient-to-t from-amber-600 to-yellow-500 shadow-lg shadow-amber-500/20'
-                    }`}
-                  >
-                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 rounded-t-xl transition-opacity"></div>
-                  </motion.div>
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 truncate w-full text-center mt-2">
-                    {ws.name}
-                  </span>
-                </div>
-              );
-            })}
-            {stats.workspaces.length === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-500 h-full w-full">
-                <Cpu size={40} className="text-slate-600 animate-pulse mb-3" />
-                <span className="text-[10px] font-black uppercase tracking-widest">No Active Workspaces Found</span>
+          <div className="relative flex-1 flex items-stretch mt-8 min-h-[220px]">
+            {/* Y-Axis Labels */}
+            <div className="w-12 flex flex-col justify-between text-[9px] font-black text-slate-500 pr-2 border-r border-slate-500/10 py-1">
+              <span>{Math.max(...stats.workspaces.map(w => w.clustersCount + w.notesCount), 10)} Nodes</span>
+              <span>75%</span>
+              <span>50%</span>
+              <span>25%</span>
+              <span>0 Nodes</span>
+            </div>
+
+            {/* Grid Area */}
+            <div className="flex-1 relative ml-4 flex items-end">
+              {/* Background Grid Lines */}
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-1">
+                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
+                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
+                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
+                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
+                <div className={`h-[1px] w-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}></div>
               </div>
-            )}
+
+              {/* Stacked Columns Container */}
+              <div className="absolute inset-0 flex justify-center items-end gap-12 px-6 py-1">
+                {stats.workspaces.map((ws, i) => {
+                  const clustersVal = ws.clustersCount || 0;
+                  const notesVal = ws.notesCount || 0;
+                  const totalVal = clustersVal + notesVal;
+                  
+                  const maxCount = Math.max(...stats.workspaces.map(w => w.clustersCount + w.notesCount), 10);
+                  
+                  // Calculate absolute heights in percentage
+                  const totalPercent = Math.max(15, Math.round((totalVal / maxCount) * 100));
+                  const notesPercent = Math.round((notesVal / (totalVal || 1)) * 100);
+                  const clustersPercent = 100 - notesPercent;
+
+                  return (
+                    <div key={ws.id} className="w-20 flex flex-col items-center gap-2 group h-full justify-end relative z-10">
+                      {/* Detailed floating popup */}
+                      <div className={`absolute bottom-full mb-2 px-3 py-2 rounded-xl border flex flex-col gap-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100 shadow-xl z-50 text-[10px] w-36 ${
+                        isDark 
+                          ? 'bg-slate-950/95 backdrop-blur-md border-white/10 text-white' 
+                          : 'bg-white border-slate-200 text-slate-800 shadow-slate-900/10'
+                      }`}>
+                        <div className="font-black uppercase tracking-wider text-[9px] border-b border-white/5 pb-1 mb-1 truncate text-blue-400">
+                          {ws.name}
+                        </div>
+                        <div className="flex justify-between font-bold">
+                          <span className="text-slate-500">Clusters:</span>
+                          <span className="text-amber-400">{clustersVal}</span>
+                        </div>
+                        <div className="flex justify-between font-bold">
+                          <span className="text-slate-500">Notes:</span>
+                          <span className="text-cyan-400">{notesVal}</span>
+                        </div>
+                        <div className="flex justify-between font-black border-t border-white/5 pt-1 mt-1 text-white">
+                          <span>Total:</span>
+                          <span>{totalVal} Nodes</span>
+                        </div>
+                      </div>
+
+                      {/* Stacked Column Block */}
+                      <div 
+                        style={{ height: `${totalPercent}%` }}
+                        className="w-12 rounded-t-xl overflow-hidden flex flex-col justify-end shadow-2xl relative transition-transform duration-300 hover:scale-105"
+                      >
+                        {/* Upper cluster segment (amber) */}
+                        {clustersVal > 0 && (
+                          <div 
+                            style={{ height: `${clustersPercent}%` }}
+                            className="w-full bg-gradient-to-b from-amber-400 to-amber-600 relative group-hover:brightness-110 transition-all animate-[pulse_6s_infinite]"
+                            title={`${clustersVal} Clusters`}
+                          />
+                        )}
+                        {/* Lower note segment (blue) */}
+                        {notesVal > 0 && (
+                          <div 
+                            style={{ height: `${notesPercent}%` }}
+                            className="w-full bg-gradient-to-b from-blue-500 to-indigo-600 relative group-hover:brightness-110 transition-all border-t border-white/10"
+                            title={`${notesVal} Notes`}
+                          />
+                        )}
+                      </div>
+
+                      {/* Label below */}
+                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 truncate w-full text-center mt-2">
+                        {ws.name}
+                      </span>
+                    </div>
+                  );
+                })}
+                {stats.workspaces.length === 0 && (
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-500 h-full w-full">
+                    <Cpu size={40} className="text-slate-600 animate-pulse mb-3" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">No Active Workspaces Found</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Graph Legend */}
+          <div className="flex justify-end gap-6 text-[9px] font-black uppercase tracking-wider text-slate-500 mt-6 pt-4 border-t border-slate-500/5">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded bg-gradient-to-b from-amber-400 to-amber-600" />
+              <span>Clusters</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded bg-gradient-to-b from-blue-500 to-indigo-600" />
+              <span>Notes</span>
+            </div>
           </div>
         </div>
 

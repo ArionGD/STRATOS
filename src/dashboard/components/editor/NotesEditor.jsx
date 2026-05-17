@@ -5,10 +5,10 @@ import {
   X, Bold, Italic, List, Link2, 
   Image as ImageIcon, Save, Share2, 
   MoreHorizontal, Heading1, Heading2, Quote, Check,
-  Edit3
+  Edit3, Maximize2, Minimize2
 } from 'lucide-react'
 
-const NotesEditor = ({ onClose, theme, activeNode, workspaceId }) => {
+const NotesEditor = ({ onClose, theme, activeNode, workspaceId, isExpanded, onToggleExpand }) => {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [status, setStatus] = useState('Draft')
@@ -74,12 +74,21 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId }) => {
             </p>
           </div>
         </div>
-        <button 
-          onClick={onClose}
-          className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
-        >
-          <X size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={onToggleExpand}
+            title={isExpanded ? "Minimize View" : "Maximize View"}
+            className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
+          >
+            {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}

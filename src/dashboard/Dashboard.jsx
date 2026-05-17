@@ -50,6 +50,7 @@ function Dashboard() {
   const [theme, setTheme] = useState('light')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [isEditorExpanded, setIsEditorExpanded] = useState(false)
   const [isAiOpen, setIsAiOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
@@ -530,9 +531,14 @@ function Dashboard() {
           {activeView === 'graph' ? (
             <>
               <motion.div 
-                animate={{ flex: (isEditorOpen || isAiOpen) ? 1 : 2 }}
+                animate={{ 
+                  flex: isEditorExpanded ? 0 : ((isEditorOpen || isAiOpen) ? 1 : 2),
+                  opacity: isEditorExpanded ? 0 : 1,
+                  width: isEditorExpanded ? 0 : 'auto',
+                  pointerEvents: isEditorExpanded ? 'none' : 'auto'
+                }}
                 transition={{ type: 'spring', damping: 35, stiffness: 300 }}
-                className="h-full overflow-hidden flex-1 relative"
+                className="h-full overflow-hidden relative"
               >
                 <GraphView 
                   theme={theme} 
@@ -571,30 +577,45 @@ function Dashboard() {
                   <motion.div 
                     key={activeNode?.id === 'root-node' ? 'workspace-view' : 'notes-view'}
                     initial={{ flex: 0, width: 0, opacity: 0 }}
-                    animate={{ flex: 1, width: 'auto', opacity: 1 }}
+                    animate={{ 
+                      flex: isEditorExpanded ? 2 : 1, 
+                      width: 'auto', 
+                      opacity: 1 
+                    }}
                     exit={{ flex: 0, width: 0, opacity: 0 }}
                     transition={{ type: 'spring', damping: 35, stiffness: 300 }}
                     className="h-full overflow-hidden flex"
                   >
                     {activeNode?.id === 'root-node' ? (
                       <WorkspaceView 
-                        onClose={() => setIsEditorOpen(false)}
+                        onClose={() => {
+                          setIsEditorOpen(false);
+                          setIsEditorExpanded(false);
+                        }}
                         theme={theme}
                         workspace={activeWorkspace}
                         nodes={dashboardNodes}
                       />
                     ) : activeNode?.data?.type === 'cluster' ? (
                       <ClusterView 
-                        onClose={() => setIsEditorOpen(false)}
+                        onClose={() => {
+                          setIsEditorOpen(false);
+                          setIsEditorExpanded(false);
+                        }}
                         theme={theme}
                         node={activeNode}
                       />
                     ) : (
                       <NotesEditor 
-                        onClose={() => setIsEditorOpen(false)} 
+                        onClose={() => {
+                          setIsEditorOpen(false);
+                          setIsEditorExpanded(false);
+                        }} 
                         theme={theme}
                         activeNode={activeNode}
                         workspaceId={activeWorkspace?.id}
+                        isExpanded={isEditorExpanded}
+                        onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
                       />
                     )}
                   </motion.div>
