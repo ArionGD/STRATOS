@@ -1,4 +1,4 @@
-# 🌌 Stratos: Architectural Operating System
+# 🌌 Stratos: Planning & Management App
 
 ![Stratos Banner](https://via.placeholder.com/1200x400/0F172A/3B82F6?text=STRATOS+COMMAND+CENTER)
 
