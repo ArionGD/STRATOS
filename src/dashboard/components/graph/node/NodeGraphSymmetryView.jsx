@@ -22,17 +22,25 @@ const NodeGraphSymmetryView = ({
   setIsEditorOpen,
   setDashboardNodes,
   isEditorOpen,
+  isAiOpen,
   activeWorkspace,
 }) => {
   const flow = useReactFlow();
   const { setNodes: setFlowNodes } = flow;
 
-  // fitView after layout settles
+  // fitView after layout settles with premium smooth descale animation
   useEffect(() => {
     if (!flow) return;
-    const t = setTimeout(() => flow.fitView({ duration: 600, padding: 0.25 }), 350);
+    const t = setTimeout(() => {
+      flow.fitView({ 
+        duration: 800, 
+        padding: 0.45, 
+        minZoom: 0.3, 
+        maxZoom: 1.5 
+      });
+    }, 150);
     return () => clearTimeout(t);
-  }, [nodes.length, edges.length, isEditorOpen, flow]);
+  }, [nodes.length, edges.length, isEditorOpen, isAiOpen, theme, flow]);
 
   const onNodeClick = (_evt, node) => {
     setActiveNode(node);
@@ -48,8 +56,8 @@ const NodeGraphSymmetryView = ({
 
     const CX = 0;   // Canvas centre
     const CY = 0;
-    const ROOT_RADIUS  = 165;  // depth-0 orbit radius (+50% from 110)
-    const DEPTH_STEP   = 150;  // extra radius per depth level (+50% from 100)
+    const ROOT_RADIUS  = 85;   // depth-0 orbit radius (extra compacted)
+    const DEPTH_STEP   = 80;   // extra radius per depth level (extra compacted)
 
     // ── Find root ──
     const rootNode = nodes.find(n => n.id === 'root-node' || n.type === 'workspace');
@@ -133,7 +141,6 @@ const NodeGraphSymmetryView = ({
     <div className="w-full h-full relative">
 
       <ReactFlow
-        key={`sg-${V}-${nodes.length}-${activeWorkspace?.id}`}
         nodes={transformed}
         edges={finalEdges}
         onNodeClick={onNodeClick}

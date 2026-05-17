@@ -15,6 +15,7 @@ import WhatsNew from './pages/WhatsNew'
 import Recommend from './pages/Recommend'
 import Guide from './pages/Guide'
 import InfoPage from './pages/Info'
+import MetisChat from '../Metis/MetisChat'
 import Stats from './modules/Stats'
 import Notes from './modules/Notes'
 import Plan from './modules/Plan'
@@ -22,6 +23,7 @@ import Vault from './modules/Vault'
 import System from './modules/System'
 import { WorkspaceService } from '../services/WorkspaceService'
 import { 
+  Brain,
   LayoutGrid, 
   BarChart2, 
   FileText, 
@@ -48,6 +50,7 @@ function Dashboard() {
   const [theme, setTheme] = useState('light')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [isAiOpen, setIsAiOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [isDropdownLocked, setIsDropdownLocked] = useState(false)
@@ -329,16 +332,21 @@ function Dashboard() {
         <header className={`h-20 border-b flex items-center justify-between px-8 shrink-0 z-40 transition-all duration-500 ${theme === 'dark' ? 'bg-[#0F172A]/70 backdrop-blur-2xl border-white/10' : 'bg-white border-[#E2E8F0]'}`}>
           <div className={`flex rounded-full p-1.5 gap-1 ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-[#F8FAFC]'}`}>
             <button 
-              onClick={() => { setIsEditorOpen(false); setActiveView('graph'); }}
-              className={`px-5 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-300 ${!isEditorOpen && activeView === 'graph' ? (theme === 'dark' ? 'bg-white text-[#0F172A] shadow-xl' : 'bg-[#0F172A] text-white shadow-md') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
+              onClick={() => { setIsEditorOpen(false); setIsAiOpen(false); setActiveView('graph'); }}
+              className={`px-5 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-300 ${!isEditorOpen && !isAiOpen && activeView === 'graph' ? (theme === 'dark' ? 'bg-white text-[#0F172A] shadow-xl' : 'bg-[#0F172A] text-white shadow-md') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
               Overview
             </button>
             <button className={`px-5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]'}`}>Activity</button>
             <button className={`px-5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]'}`}>Manage</button>
             <button 
-              onClick={() => setIsEditorOpen(!isEditorOpen)}
+              onClick={() => { setIsEditorOpen(!isEditorOpen); setIsAiOpen(false); }}
               className={`px-5 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${isEditorOpen ? (theme === 'dark' ? 'bg-white text-[#0F172A] shadow-xl' : 'bg-[#0F172A] text-white shadow-md') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
               Editor
+            </button>
+            <button 
+              onClick={() => { setIsAiOpen(!isAiOpen); setIsEditorOpen(false); setActiveView('graph'); }}
+              className={`px-5 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${isAiOpen ? (theme === 'dark' ? 'bg-white text-[#0F172A] shadow-xl' : 'bg-[#0F172A] text-white shadow-md') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
+              AI
             </button>
           </div>
 
@@ -522,13 +530,14 @@ function Dashboard() {
           {activeView === 'graph' ? (
             <>
               <motion.div 
-                animate={{ flex: isEditorOpen ? 1 : 2 }}
+                animate={{ flex: (isEditorOpen || isAiOpen) ? 1 : 2 }}
                 transition={{ type: 'spring', damping: 35, stiffness: 300 }}
-                className="h-full overflow-hidden flex-1"
+                className="h-full overflow-hidden flex-1 relative"
               >
                 <GraphView 
                   theme={theme} 
                   isEditorOpen={isEditorOpen} 
+                  isAiOpen={isAiOpen}
                   activeWorkspace={activeWorkspace}
                   workspaces={workspaces}
                   setActiveWorkspace={setActiveWorkspace}
@@ -536,10 +545,29 @@ function Dashboard() {
                   setIsEditorOpen={setIsEditorOpen}
                   setDashboardNodes={setDashboardNodes}
                 />
+
+                {/* METIS AI Floating Bubble Trigger */}
+                <button
+                  onClick={() => {
+                    setIsAiOpen(!isAiOpen);
+                    setIsEditorOpen(false);
+                  }}
+                  className={`absolute bottom-8 right-8 z-[999] w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer ${
+                    isAiOpen 
+                      ? 'bg-red-500 text-white shadow-red-500/20' 
+                      : theme === 'dark' 
+                        ? 'bg-blue-600 text-white shadow-blue-600/40 border border-white/10' 
+                        : 'bg-[#0F172A] text-white shadow-slate-900/30'
+                  }`}
+                  title="METIS AI"
+                >
+                  <div className="absolute inset-0 rounded-full bg-blue-500/25 blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <Brain size={24} className={`relative z-10 ${isAiOpen ? 'rotate-90' : 'animate-[spin_20s_linear_infinite]'}`} />
+                </button>
               </motion.div>
               
               <AnimatePresence mode="wait">
-                {isEditorOpen && (
+                {isEditorOpen ? (
                   <motion.div 
                     key={activeNode?.id === 'root-node' ? 'workspace-view' : 'notes-view'}
                     initial={{ flex: 0, width: 0, opacity: 0 }}
@@ -570,7 +598,22 @@ function Dashboard() {
                       />
                     )}
                   </motion.div>
-                )}
+                ) : isAiOpen ? (
+                  <motion.div 
+                    key="metis-ai-view"
+                    initial={{ flex: 0, width: 0, opacity: 0 }}
+                    animate={{ flex: 1, width: 'auto', opacity: 1 }}
+                    exit={{ flex: 0, width: 0, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 35, stiffness: 300 }}
+                    className="h-full overflow-hidden flex"
+                  >
+                    <MetisChat 
+                      onClose={() => setIsAiOpen(false)}
+                      theme={theme}
+                      activeWorkspace={activeWorkspace}
+                    />
+                  </motion.div>
+                ) : null}
               </AnimatePresence>
             </>
           ) : activeView === 'settings' ? (

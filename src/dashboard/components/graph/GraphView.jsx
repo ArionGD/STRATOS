@@ -7,7 +7,7 @@ import CommandBar from './CommandBar'
 import { NoteService } from '../../../services/NoteService'
 import { WorkspaceService } from '../../../services/WorkspaceService'
 
-const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode }) => {
+const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode }) => {
   const [displayMode, setDisplayMode] = useState('chart')
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -153,6 +153,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, s
           <FlowChartView 
             theme={theme}
             isEditorOpen={isEditorOpen}
+            isAiOpen={isAiOpen}
             activeWorkspace={activeWorkspace}
             nodes={nodes}
             setNodes={setNodes}
@@ -180,6 +181,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, activeWorkspace, workspaces, s
             setIsEditorOpen={setIsEditorOpen}
             setDashboardNodes={setDashboardNodes}
             isEditorOpen={isEditorOpen}
+            isAiOpen={isAiOpen}
           />
         )}
 

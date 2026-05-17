@@ -42,3 +42,15 @@ pub struct Note {
     pub parent_id: String, // Can be a Workspace ID or a Cluster ID
     pub workspace_id: String,
 }
+
+/// Represents a conversation thread inside a workspace
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Conversation {
+    pub id: String,
+    pub workspace_id: String,
+    pub user_id: i32,
+    pub workspace_name: String,
+    pub title: String,
+    pub messages_json: String,
+    pub updated_at: String,
+}

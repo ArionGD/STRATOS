@@ -64,5 +64,24 @@ pub fn init_db(db_path: &Path) -> Connection {
         (),
     ).expect("Failed to create notes table");
 
+    // Drop old tables first to ensure clean simplified schema migrates without collision
+    let _ = conn.execute("DROP TABLE IF EXISTS conversation_messages", ());
+    let _ = conn.execute("DROP TABLE IF EXISTS chat_histories", ());
+
+    // Create the conversations table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS conversations (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            workspace_name TEXT NOT NULL,
+            title TEXT NOT NULL,
+            messages_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces (id)
+        )",
+        (),
+    ).expect("Failed to create conversations table");
+
     conn
 }

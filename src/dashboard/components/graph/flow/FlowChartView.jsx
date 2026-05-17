@@ -108,6 +108,7 @@ function layoutTree(nodes, edges) {
 const FlowChartView = ({ 
   theme, 
   isEditorOpen, 
+  isAiOpen,
   nodes, 
   setNodes, 
   onNodesChange,
@@ -129,10 +130,10 @@ const FlowChartView = ({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fitView({ duration: 800, padding: 0.15, minZoom: 0.4, maxZoom: 1.8 })
+      fitView({ duration: 800, padding: 0.38, minZoom: 0.3, maxZoom: 1.5 })
     }, 400)
     return () => clearTimeout(timer)
-  }, [isEditorOpen, theme, nodes.length, fitView])
+  }, [isEditorOpen, isAiOpen, theme, nodes.length, fitView])
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge({
     ...params,

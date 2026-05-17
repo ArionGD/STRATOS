@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use tauri::Manager;
 use crate::db::{DbState, init_db};
 use crate::auth::{register_user, login_user, list_users};
-use crate::workspace::{create_workspace, create_cluster, save_note, get_workspace_data, list_workspaces};
+use crate::workspace::{create_workspace, create_cluster, save_note, get_workspace_data, list_workspaces, save_conversation, delete_conversation, list_conversations};
 
 // 3. MAIN ENTRY POINT
 fn main() {
@@ -48,7 +48,10 @@ fn main() {
             create_cluster,
             save_note,
             get_workspace_data,
-            list_workspaces
+            list_workspaces,
+            save_conversation,
+            delete_conversation,
+            list_conversations
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
