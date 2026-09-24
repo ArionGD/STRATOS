@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { db } from './db.js'
+import { db, UNIQUE_VIOLATION } from './db.js'
 
 const PORT = process.env.PORT || 8787
 const IS_PROD = process.env.NODE_ENV === 'production'
@@ -84,7 +84,7 @@ app.post('/api/auth/register', route(async (req, res) => {
     )
     res.status(201).json({ message: `Account for ${username} created successfully!`, user: publicUser(rows[0]) })
   } catch (err) {
-    if (err.code === '23505') throw new HttpError(409, 'That username or email is already registered')
+    if (err.code === UNIQUE_VIOLATION) throw new HttpError(409, 'That username or email is already registered')
     throw err
   }
 }))
@@ -192,7 +192,7 @@ app.put('/api/notes/:id', requireAuth, route(async (req, res) => {
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (id) DO UPDATE
        SET title = EXCLUDED.title, content = EXCLUDED.content,
-           parent_id = EXCLUDED.parent_id, updated_at = now()
+           parent_id = EXCLUDED.parent_id, updated_at = CURRENT_TIMESTAMP
        WHERE notes.workspace_id = EXCLUDED.workspace_id`,
     [req.params.id, title || 'Untitled Node', content || '', parent_id, workspace_id]
   )
@@ -228,7 +228,7 @@ app.put('/api/conversations/:id', requireAuth, route(async (req, res) => {
 
   // Same 3-threads-per-workspace guard as the desktop build
   const count = await db.query(
-    'SELECT count(*)::int AS n FROM conversations WHERE user_id = $1 AND workspace_id = $2',
+    'SELECT count(*) AS n FROM conversations WHERE user_id = $1 AND workspace_id = $2',
     [req.userId, workspace_id]
   )
   if (count.rows[0].n >= 3) throw new HttpError(409, 'limit_reached')
@@ -261,22 +261,27 @@ app.use((req, res, next) => {
 
 app.use((err, req, res, next) => {
   if (err instanceof HttpError) return res.status(err.status).json({ error: err.message })
-  if (err.code === '23505') return res.status(409).json({ error: 'That item already exists' })
+  if (err.code === UNIQUE_VIOLATION) return res.status(409).json({ error: 'That item already exists' })
   console.error(err)
   res.status(500).json({ error: 'Internal server error' })
 })
 
 // ---------------------------------------------------------------- demo account
 
-if (process.env.SEED_DEMO_USER === 'true' || !IS_PROD) {
-  const hash = await bcrypt.hash('pass', 10)
+// Created (or its password reset) on every boot from DEMO_USERNAME / DEMO_PASSWORD.
+// Local dev falls back to test / pass.
+const DEMO_USERNAME = process.env.DEMO_USERNAME || (IS_PROD ? '' : 'test')
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || (IS_PROD ? '' : 'pass')
+
+if (DEMO_USERNAME && DEMO_PASSWORD) {
+  const hash = await bcrypt.hash(DEMO_PASSWORD, 10)
   await db.query(
     `INSERT INTO users (first_name, last_name, username, email, password_hash)
-     VALUES ('Test', 'User', 'test', 'test@stratos.com', $1)
-     ON CONFLICT DO NOTHING`,
-    [hash]
+     VALUES ('Test', 'User', $1, $2, $3)
+     ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
+    [DEMO_USERNAME, `${DEMO_USERNAME}@stratos.com`, hash]
   )
-  console.log('👤 Demo account ready: test / pass')
+  console.log(`👤 Demo account ready: ${DEMO_USERNAME}`)
 }
 
 app.listen(PORT, () => console.log(`🚀 Stratos web server on http://localhost:${PORT}`))

@@ -1,5 +1,7 @@
-# Render Blueprint: Stratos web app + Postgres (free tier)
+# Render Blueprint: Stratos web app (free tier, SQLite)
 # Deploy: Render Dashboard -> New -> Blueprint -> pick this repo.
+# The free tier's disk is ephemeral: the SQLite file resets on every deploy,
+# restart or idle spin-down. The demo account below is recreated on each boot.
 services:
   - type: web
     name: stratos
@@ -19,15 +21,7 @@ services:
         value: --max-old-space-size=320
       - key: JWT_SECRET
         generateValue: true
-      - key: SEED_DEMO_USER
-        value: "true"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: stratos-db
-          property: connectionString
-
-databases:
-  - name: stratos-db
-    plan: free
-    databaseName: stratos
-    user: stratos
+      - key: DEMO_USERNAME
+        value: test
+      - key: DEMO_PASSWORD
+        value: pass
