@@ -5,8 +5,10 @@ const useUserStore = create(
   persist(
     (set) => ({
       user: null,
-      setUser: (user) => set({ user }),
-      logout: () => set({ user: null }),
+      // Session token for the hosted web API (unused by the Tauri desktop build)
+      token: null,
+      setUser: (user, token = null) => set({ user, token }),
+      logout: () => set({ user: null, token: null }),
     }),
     {
       name: 'stratos-user-storage',

@@ -12,7 +12,7 @@ import {
   FileText 
 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
-import { browserDB } from '../../services/BrowserDB'
+import { WebApi } from '../../services/WebApi'
 
 const Plan = ({ theme }) => {
   const isDark = theme === 'dark';
@@ -45,9 +45,10 @@ const Plan = ({ theme }) => {
             allNotes = [...allNotes, ...(notesList || [])];
           }
         } else {
-          // Dexie IndexedDB
-          workspaces = await browserDB.workspaces.toArray();
-          allNotes = await browserDB.notes.toArray();
+          // Web Mode: Stratos API
+          const overview = await WebApi.get('/overview');
+          workspaces = overview.workspaces;
+          allNotes = overview.notes;
         }
 
         // Map workspaces and notes to days in May 2026
@@ -114,44 +115,44 @@ const Plan = ({ theme }) => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`flex-1 flex flex-col h-full overflow-hidden ${
+      className={`flex-1 flex flex-col h-full overflow-y-auto no-scrollbar md:overflow-hidden ${
         isDark ? 'text-white' : 'text-slate-800'
       }`}
     >
-      <header className={`h-24 border-b flex items-center justify-between px-10 shrink-0 ${
+      <header className={`border-b flex flex-col items-start gap-3 px-4 pt-5 pb-4 md:h-24 md:flex-row md:items-center md:justify-between md:px-10 md:py-0 md:gap-0 shrink-0 ${
         isDark ? 'border-white/5' : 'border-slate-200 bg-white'
       }`}>
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/10">
+        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+          <div className="w-11 h-11 md:w-12 md:h-12 shrink-0 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/10">
             <CalendarIcon size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter">Architectural <span className="text-amber-500">Timeline</span></h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Synchronize your cognitive roadmap</p>
+            <h1 className="text-[26px] leading-[1.05] md:text-2xl font-black uppercase tracking-tighter">Architectural <span className="text-amber-500">Timeline</span></h1>
+            <p className="mt-1 md:mt-0 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Synchronize your cognitive roadmap</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <button className={`p-2 rounded-lg transition-all ${isDark ? 'hover:bg-white/5 text-slate-500' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronLeft size={20} /></button>
+        <div className="flex items-center gap-6 w-full md:w-auto">
+          <div className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
+            <button className={`p-2.5 md:p-2 rounded-lg transition-all ${isDark ? 'hover:bg-white/5 text-slate-500' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronLeft size={20} /></button>
             <span className="text-sm font-black uppercase tracking-widest">May 2026</span>
-            <button className={`p-2 rounded-lg transition-all ${isDark ? 'hover:bg-white/5 text-slate-500' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronRight size={20} /></button>
+            <button className={`p-2.5 md:p-2 rounded-lg transition-all ${isDark ? 'hover:bg-white/5 text-slate-500' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronRight size={20} /></button>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 p-10 overflow-hidden">
+      <div className="md:flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 p-4 md:p-10 md:overflow-hidden shrink-0 md:shrink">
         {/* Calendar Grid */}
-        <div className={`lg:col-span-3 rounded-[3rem] border p-8 overflow-hidden flex flex-col justify-between ${
+        <div className={`lg:col-span-3 rounded-2xl md:rounded-[3rem] border p-3 md:p-8 overflow-hidden flex flex-col justify-between ${
           isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
         }`}>
-          <div className="grid grid-cols-7 mb-4">
+          <div className="grid grid-cols-7 mb-2 md:mb-4">
             {days.map(d => (
-              <div key={d} className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">{d}</div>
+              <div key={d} className="text-center text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-wider md:tracking-widest">{d}</div>
             ))}
           </div>
           
-          <div className="flex-1 grid grid-cols-7 grid-rows-5 gap-2.5">
+          <div className="flex-1 grid grid-cols-7 grid-rows-5 gap-1 md:gap-2.5">
             {Array.from({ length: 35 }).map((_, i) => {
               // Padding/offset for Mon first layout starting in May 2026 (May 1st is Friday)
               // Monday is offset index -4
@@ -160,7 +161,7 @@ const Plan = ({ theme }) => {
               
               if (!isMonthDay) {
                 return (
-                  <div key={i} className={`p-4 rounded-2xl opacity-10 border ${
+                  <div key={i} className={`p-1.5 md:p-4 rounded-xl md:rounded-2xl opacity-10 border ${
                     isDark ? 'border-white/5 bg-transparent' : 'border-slate-100 bg-slate-50'
                   }`} />
                 );
@@ -173,7 +174,7 @@ const Plan = ({ theme }) => {
               return (
                 <div 
                   key={i} 
-                  className={`p-4 rounded-2xl border transition-all relative group cursor-pointer flex flex-col justify-between min-h-[90px] ${
+                  className={`p-1.5 md:p-4 rounded-xl md:rounded-2xl border transition-all relative group cursor-pointer flex flex-col items-center md:items-stretch justify-between min-h-[48px] md:min-h-[90px] min-w-0 ${
                     isToday 
                       ? 'border-amber-500 bg-amber-500/5 shadow-inner' 
                       : hasWork
@@ -181,10 +182,10 @@ const Plan = ({ theme }) => {
                         : (isDark ? 'border-white/5 bg-transparent opacity-60 hover:opacity-100' : 'border-slate-100 bg-slate-50/50 opacity-60 hover:opacity-100')
                   }`}
                 >
-                  <div className="flex justify-between items-center w-full">
-                    <span className={`text-xs font-black ${isToday ? 'text-amber-500' : 'text-slate-500'}`}>{day}</span>
+                  <div className="flex justify-center md:justify-between items-center w-full">
+                    <span className={`text-[13px] md:text-xs font-black ${isToday ? 'text-amber-500' : 'text-slate-500'}`}>{day}</span>
                     {isToday && (
-                      <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
+                      <span className="hidden md:inline text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
                         TODAY
                       </span>
                     )}
@@ -192,8 +193,8 @@ const Plan = ({ theme }) => {
 
                   {/* Marker Dots for Work done on Date */}
                   {hasWork && (
-                    <div className="flex items-center gap-1.5 mt-auto pt-2">
-                      <div className="flex gap-1">
+                    <div className="flex items-center gap-1.5 mt-auto pt-1 md:pt-2">
+                      <div className="flex gap-0.5 md:gap-1">
                         {dayActivities.slice(0, 3).map((act, idx) => (
                           <div 
                             key={idx} 
@@ -205,7 +206,7 @@ const Plan = ({ theme }) => {
                           />
                         ))}
                       </div>
-                      <span className="text-[8px] font-black text-slate-500 leading-none">
+                      <span className="hidden md:inline text-[8px] font-black text-slate-500 leading-none">
                         {dayActivities.length} {dayActivities.length === 1 ? 'Action' : 'Actions'}
                       </span>
                     </div>
@@ -213,7 +214,7 @@ const Plan = ({ theme }) => {
 
                   {/* Hover Popup Panel showing the work details */}
                   {hasWork && (
-                    <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-4 rounded-2xl border flex flex-col gap-2 transition-all duration-300 opacity-0 pointer-events-none group-hover:opacity-100 shadow-2xl z-[999] w-64 ${
+                    <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-4 rounded-2xl border hidden md:flex flex-col gap-2 transition-all duration-300 opacity-0 pointer-events-none group-hover:opacity-100 shadow-2xl z-[999] w-64 ${
                       isDark 
                         ? 'bg-slate-950/95 backdrop-blur-md border-white/10 text-white' 
                         : 'bg-white border-slate-200 text-slate-800 shadow-slate-900/10'
@@ -242,8 +243,8 @@ const Plan = ({ theme }) => {
         </div>
 
         {/* Sidebar Schedule */}
-        <div className="space-y-6 overflow-y-auto no-scrollbar">
-          <div className={`p-8 rounded-[2.5rem] border space-y-6 ${
+        <div className="space-y-4 md:space-y-6 md:overflow-y-auto no-scrollbar">
+          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border space-y-5 md:space-y-6 ${
             isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
           }`}>
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
@@ -256,7 +257,7 @@ const Plan = ({ theme }) => {
                 { title: 'Data Migration', progress: 95 },
               ].map((g, idx) => (
                 <div key={idx} className="space-y-2">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex justify-between text-[11px] md:text-[10px] font-black uppercase tracking-widest">
                     <span>{g.title}</span>
                     <span className="text-amber-500">{g.progress}%</span>
                   </div>
@@ -268,7 +269,7 @@ const Plan = ({ theme }) => {
             </div>
           </div>
 
-          <div className={`p-8 rounded-[2.5rem] border space-y-6 ${
+          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border space-y-5 md:space-y-6 ${
             isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
           }`}>
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
@@ -279,15 +280,15 @@ const Plan = ({ theme }) => {
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center py-4">No recent activity logged</div>
               ) : (
                 events.map((e, idx) => (
-                  <div key={idx} className={`flex gap-4 p-4 rounded-xl border transition-colors ${
+                  <div key={idx} className={`flex items-center md:items-stretch gap-4 p-3.5 md:p-4 rounded-xl border transition-colors ${
                     isDark ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                   }`}>
                     <div className="text-center shrink-0">
-                      <div className="text-xs font-black text-amber-500">{e.day}</div>
+                      <div className="text-sm md:text-xs font-black text-amber-500">{e.day}</div>
                       <div className="text-[8px] font-black text-slate-500 uppercase">May</div>
                     </div>
-                    <div className="truncate flex-1">
-                      <div className="text-xs font-bold truncate">{e.title}</div>
+                    <div className="truncate flex-1 min-w-0">
+                      <div className="text-[13px] md:text-xs font-bold truncate">{e.title}</div>
                       <div className="text-[9px] font-black uppercase text-slate-500 mt-0.5">
                         {e.type === 'workspace' ? 'Environment Build' : 'Knowledge Node'}
                       </div>

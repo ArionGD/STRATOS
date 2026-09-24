@@ -15,7 +15,7 @@ import {
   Cpu
 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
-import { browserDB } from '../../services/BrowserDB'
+import { WebApi } from '../../services/WebApi'
 
 const Stats = ({ theme }) => {
   const isDark = theme === 'dark';
@@ -95,12 +95,13 @@ const Stats = ({ theme }) => {
             totalConvsCount += (convList || []).length;
           }
         } else {
-          // Browser IndexedDB mode
-          allWorkspaces = await browserDB.workspaces.toArray();
+          // Web Mode: Stratos API
+          const overview = await WebApi.get('/overview');
+          allWorkspaces = overview.workspaces;
           
           for (const ws of allWorkspaces) {
-            const clusters = await browserDB.clusters.where('workspace_id').equals(ws.id).toArray();
-            const notes = await browserDB.notes.where('workspace_id').equals(ws.id).toArray();
+            const clusters = overview.clusters.filter(c => c.workspace_id === ws.id);
+            const notes = overview.notes.filter(n => n.workspace_id === ws.id);
             
             ws.clustersCount = (clusters || []).length;
             ws.notesCount = (notes || []).length;
@@ -128,8 +129,7 @@ const Stats = ({ theme }) => {
           }
 
           // Conversations count
-          const allConvs = await browserDB.conversations.toArray();
-          totalConvsCount = (allConvs || []).length;
+          totalConvsCount = overview.conversations.length;
         }
       } catch (err) {
         console.error('Failed to load real stats:', err);
@@ -213,38 +213,38 @@ const Stats = ({ theme }) => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex-1 overflow-y-auto no-scrollbar p-10 space-y-10 ${
+      className={`flex-1 overflow-y-auto no-scrollbar px-4 pt-5 pb-6 md:p-10 space-y-5 md:space-y-10 ${
         isDark ? 'text-white' : 'text-slate-800'
       }`}
     >
       <header className="space-y-2">
-        <h1 className="text-4xl font-black tracking-tighter uppercase">
+        <h1 className="text-[28px] leading-[1.05] md:text-4xl font-black tracking-tighter uppercase">
           Architectural <span className="text-blue-600">Analytics</span>
         </h1>
-        <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
+        <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em]">
           Measuring your cognitive ecosystem expansion
         </p>
       </header>
 
       {/* Core Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         {metrics.map((m, idx) => (
           <div 
             key={idx} 
-            className={`p-8 rounded-[2.5rem] border transition-all ${
+            className={`p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border transition-all min-w-0 ${
               isDark 
                 ? 'border-white/5 bg-white/2 hover:border-blue-500/30' 
                 : 'border-slate-200 bg-white hover:border-blue-500/20 shadow-sm'
             }`}
           >
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${
+            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-6 ${
               isDark ? 'bg-white/5' : 'bg-slate-50 border border-slate-100'
             } ${m.color}`}>
-              <m.icon size={24} />
+              <m.icon className="w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <div className="text-3xl font-black mb-1">{m.value}</div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{m.label}</span>
+            <div className="text-2xl md:text-3xl font-black mb-1 truncate">{m.value}</div>
+            <div className="flex flex-col items-start gap-1.5 md:flex-row md:items-center md:justify-between md:gap-0">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider md:tracking-widest">{m.label}</span>
               <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
                 ACTIVE
               </span>
@@ -253,19 +253,19 @@ const Stats = ({ theme }) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
         {/* Workspace Density Chart */}
-        <div className={`lg:col-span-2 p-10 rounded-[3rem] border relative overflow-hidden flex flex-col justify-between min-h-[400px] ${
+        <div className={`lg:col-span-2 p-5 md:p-10 rounded-2xl md:rounded-[3rem] border relative overflow-hidden flex flex-col justify-between min-h-[340px] md:min-h-[400px] ${
           isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
         }`}>
           <div className="space-y-2">
-            <h2 className="text-xl font-black uppercase tracking-widest">Workspace Density</h2>
+            <h2 className="text-base md:text-xl font-black uppercase tracking-widest">Workspace Density</h2>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Stacked node composition (Clusters vs. Notes) per active environment</p>
           </div>
           
-          <div className="relative flex-1 flex items-stretch mt-8 min-h-[220px]">
+          <div className="relative flex-1 flex items-stretch mt-6 md:mt-8 min-h-[220px]">
             {/* Y-Axis Labels */}
-            <div className="w-12 flex flex-col justify-between text-[9px] font-black text-slate-500 pr-2 border-r border-slate-500/10 py-1">
+            <div className="w-10 md:w-12 shrink-0 flex flex-col justify-between text-[8px] md:text-[9px] font-black text-slate-500 pr-1.5 md:pr-2 border-r border-slate-500/10 py-1">
               <span>{Math.max(...stats.workspaces.map(w => w.clustersCount + w.notesCount), 10)} Nodes</span>
               <span>75%</span>
               <span>50%</span>
@@ -274,7 +274,7 @@ const Stats = ({ theme }) => {
             </div>
 
             {/* Grid Area */}
-            <div className="flex-1 relative ml-4 flex items-end">
+            <div className="flex-1 min-w-0 relative ml-2 md:ml-4 flex items-end">
               {/* Background Grid Lines */}
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-1">
                 <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
@@ -285,7 +285,7 @@ const Stats = ({ theme }) => {
               </div>
 
               {/* Stacked Columns Container */}
-              <div className="absolute inset-0 flex justify-center items-end gap-12 px-6 py-1">
+              <div className="absolute inset-0 flex justify-around md:justify-center items-end gap-2 md:gap-12 px-1 md:px-6 py-1">
                 {stats.workspaces.map((ws, i) => {
                   const clustersVal = ws.clustersCount || 0;
                   const notesVal = ws.notesCount || 0;
@@ -299,9 +299,9 @@ const Stats = ({ theme }) => {
                   const clustersPercent = 100 - notesPercent;
 
                   return (
-                    <div key={ws.id} className="w-20 flex flex-col items-center gap-2 group h-full justify-end relative z-10">
+                    <div key={ws.id} className="flex-1 min-w-0 max-w-[80px] md:flex-none md:max-w-none md:w-20 flex flex-col items-center gap-2 group h-full justify-end relative z-10">
                       {/* Detailed floating popup */}
-                      <div className={`absolute bottom-full mb-2 px-3 py-2 rounded-xl border flex flex-col gap-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100 shadow-xl z-50 text-[10px] w-36 ${
+                      <div className={`absolute bottom-full mb-2 px-3 py-2 rounded-xl border hidden md:flex flex-col gap-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100 shadow-xl z-50 text-[10px] w-36 ${
                         isDark 
                           ? 'bg-slate-950/95 backdrop-blur-md border-white/10 text-white' 
                           : 'bg-white border-slate-200 text-slate-800 shadow-slate-900/10'
@@ -326,7 +326,7 @@ const Stats = ({ theme }) => {
                       {/* Stacked Column Block */}
                       <div 
                         style={{ height: `${totalPercent}%` }}
-                        className="w-12 rounded-t-xl overflow-hidden flex flex-col justify-end shadow-2xl relative transition-transform duration-300 hover:scale-105"
+                        className="w-8 md:w-12 rounded-t-lg md:rounded-t-xl overflow-hidden flex flex-col justify-end shadow-2xl relative transition-transform duration-300 hover:scale-105"
                       >
                         {/* Upper cluster segment (amber) */}
                         {clustersVal > 0 && (
@@ -364,7 +364,7 @@ const Stats = ({ theme }) => {
           </div>
 
           {/* Graph Legend */}
-          <div className="flex justify-end gap-6 text-[9px] font-black uppercase tracking-wider text-slate-500 mt-6 pt-4 border-t border-slate-500/5">
+          <div className="flex justify-center md:justify-end gap-6 text-[9px] font-black uppercase tracking-wider text-slate-500 mt-4 md:mt-6 pt-4 border-t border-slate-500/5">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded bg-gradient-to-b from-amber-400 to-amber-600" />
               <span>Clusters</span>
@@ -377,21 +377,21 @@ const Stats = ({ theme }) => {
         </div>
 
         {/* Top Sectors Card */}
-        <div className={`p-10 rounded-[3rem] border flex flex-col justify-between ${
+        <div className={`p-5 md:p-10 rounded-2xl md:rounded-[3rem] border flex flex-col justify-between ${
           isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
         }`}>
           <div className="space-y-2">
-            <h2 className="text-xl font-black uppercase tracking-widest">Top Sectors</h2>
+            <h2 className="text-base md:text-xl font-black uppercase tracking-widest">Top Sectors</h2>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Most active knowledge clusters</p>
           </div>
-          <div className="space-y-6 my-6">
+          <div className="space-y-5 md:space-y-6 my-5 md:my-6">
             {stats.sectors.map((s, idx) => {
               const colors = ['bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
               return (
                 <div key={idx} className="space-y-2">
-                  <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
-                    <span>{s.label}</span>
-                    <span className="text-slate-500">{s.value}%</span>
+                  <div className="flex justify-between gap-3 md:gap-0 text-[11px] font-black uppercase tracking-wider md:tracking-widest">
+                    <span className="min-w-0 md:min-w-[auto] truncate md:overflow-visible md:whitespace-normal">{s.label}</span>
+                    <span className="text-slate-500 shrink-0">{s.value}%</span>
                   </div>
                   <div className={`h-2 rounded-full overflow-hidden ${
                     isDark ? 'bg-white/5' : 'bg-slate-100'
@@ -420,17 +420,69 @@ const Stats = ({ theme }) => {
       </div>
 
       {/* Workspace Registry Detail Table */}
-      <div className={`p-10 rounded-[3rem] border space-y-6 ${
+      <div className={`p-5 md:p-10 rounded-2xl md:rounded-[3rem] border space-y-4 md:space-y-6 ${
         isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
       }`}>
         <div className="space-y-2">
-          <h2 className="text-xl font-black uppercase tracking-widest">Workspace Registry</h2>
+          <h2 className="text-base md:text-xl font-black uppercase tracking-widest">Workspace Registry</h2>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
             Relational density audit of active environments
           </p>
         </div>
 
-        <div className="overflow-x-auto no-scrollbar">
+        {/* Mobile: stacked registry cards */}
+        <div className="md:hidden space-y-3">
+          {stats.workspaces.map((ws) => {
+            const totalNodes = ws.clustersCount + ws.notesCount;
+            const densityPercent = Math.min(100, Math.round((totalNodes / 15) * 100));
+            return (
+              <div
+                key={ws.id}
+                className={`p-4 rounded-2xl border ${
+                  isDark ? 'border-white/5 bg-white/2' : 'border-slate-100 bg-slate-50/60'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 shrink-0">
+                    <Folder size={14} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-black uppercase tracking-wide truncate">{ws.name}</div>
+                    <div className="text-[9px] text-slate-500 font-medium font-mono truncate">{ws.id}</div>
+                  </div>
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                    densityPercent > 75
+                      ? 'bg-emerald-500/10 text-emerald-400'
+                      : densityPercent > 40
+                        ? 'bg-blue-500/10 text-blue-400'
+                        : 'bg-amber-500/10 text-amber-400'
+                  }`}>
+                    {densityPercent}%
+                  </span>
+                </div>
+                <div className={`grid grid-cols-3 gap-2 mt-3 pt-3 border-t ${isDark ? 'border-white/5' : 'border-slate-200/70'}`}>
+                  {[
+                    { label: 'Clusters', value: ws.clustersCount, cls: '' },
+                    { label: 'Notes', value: ws.notesCount, cls: '' },
+                    { label: 'Total', value: totalNodes, cls: 'text-blue-400' },
+                  ].map((c) => (
+                    <div key={c.label} className="text-center">
+                      <div className={`text-base font-black ${c.cls}`}>{c.value}</div>
+                      <div className="text-[9px] font-black uppercase tracking-widest text-slate-500">{c.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {stats.workspaces.length === 0 && (
+            <div className="py-6 text-center text-slate-500 font-bold uppercase tracking-widest text-xs">
+              Please create a workspace to view detailed analytics.
+            </div>
+          )}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto no-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b text-[9px] font-black uppercase tracking-widest text-slate-500 border-slate-500/10">

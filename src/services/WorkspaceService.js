@@ -1,12 +1,10 @@
 /**
  * Stratos Workspace Service
- * Manages project containers and synchronization across Desktop (SQLite) and Browser (Dexie).
+ * Manages project containers and synchronization across Desktop (SQLite) and Web (Stratos API).
  */
 import { invoke } from '@tauri-apps/api/core'
 import useUserStore from '../store/useUserStore'
-import { browserDB } from './BrowserDB'
-
-const isTauri = !!window.__TAURI_INTERNALS__;
+import { WebApi, isTauri } from './WebApi'
 
 export const WorkspaceService = {
   // Initialize and fetch all workspaces
@@ -23,16 +21,11 @@ export const WorkspaceService = {
         return [];
       }
     } else {
-      // BROWSER MODE: Use Dexie
+      // WEB MODE: Stratos API (scoped to the signed-in account)
       try {
-        const workspaces = await browserDB.workspaces
-          .where('user_id')
-          .equals(user.id)
-          .toArray();
-        console.log('🏗️ Workspaces Synced from Browser DB:', workspaces);
-        return workspaces;
+        return await WebApi.get('/workspaces');
       } catch (err) {
-        console.error('Browser Sync Error:', err);
+        console.error('Web Sync Error:', err);
         return [];
       }
     }
@@ -60,12 +53,11 @@ export const WorkspaceService = {
         console.error('Failed to persist workspace:', err);
       }
     } else {
-      // BROWSER MODE: Use Dexie
+      // WEB MODE: Stratos API
       try {
-        await browserDB.workspaces.add(newWS);
-        console.log('✅ Workspace Persisted to Browser DB');
+        await WebApi.post('/workspaces', { id: newWS.id, name: newWS.name });
       } catch (err) {
-        console.error('Dexie Workspace Error:', err);
+        console.error('Web Workspace Error:', err);
       }
     }
 
@@ -85,12 +77,12 @@ export const WorkspaceService = {
         return { success: false, error: err };
       }
     } else {
-      // BROWSER MODE: Use Dexie
+      // WEB MODE: Stratos API
       try {
-        await browserDB.clusters.add(clusterData);
+        await WebApi.post('/clusters', clusterData);
         return { success: true };
       } catch (err) {
-        console.error('Dexie Cluster Error:', err);
+        console.error('Web Cluster Error:', err);
         return { success: false, error: err };
       }
     }

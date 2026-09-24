@@ -3,61 +3,66 @@ import { motion } from 'framer-motion'
 import { Wallet, Shield, Lock, Key, Fingerprint, Eye, EyeOff, MoreVertical } from 'lucide-react'
 
 const Vault = ({ theme }) => {
+  // phone-only light-theme surfaces (desktop unchanged)
+  const lt = theme !== 'dark'
+  const card = lt ? 'max-md:bg-white max-md:border-slate-200 max-md:shadow-sm' : ''
+  const tile = lt ? 'max-md:bg-slate-50 max-md:border-slate-200' : ''
+  const line = lt ? 'max-md:border-slate-200' : ''
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex-1 flex flex-col h-full overflow-hidden"
+      className="flex-1 max-md:min-w-0 flex flex-col h-full overflow-y-auto md:overflow-hidden no-scrollbar"
     >
-      <header className="h-24 border-b border-white/5 flex items-center justify-between px-10 shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-500">
+      <header className={`h-auto md:h-24 border-b border-white/5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-0 px-4 py-5 md:py-0 md:px-10 shrink-0 ${line}`}>
+        <div className="flex items-center gap-3 md:gap-4 max-md:min-w-0">
+          <div className="w-11 h-11 md:w-12 md:h-12 max-md:shrink-0 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-500">
             <Wallet size={24} />
           </div>
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter">Secure <span className="text-indigo-500">Vault</span></h1>
+          <div className="max-md:min-w-0">
+            <h1 className="text-[26px] max-md:leading-tight md:text-2xl font-black uppercase tracking-tighter">Secure <span className="text-indigo-500">Vault</span></h1>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">End-to-end encrypted architectural storage</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full flex items-center gap-2">
+        <div className="flex items-center justify-between md:justify-start gap-3 md:gap-4">
+          <div className="px-3 md:px-4 py-2 max-md:min-h-[40px] bg-green-500/10 border border-green-500/20 rounded-full flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Quantum Shield Active</span>
+            <span className="text-[10px] font-black text-green-500 uppercase max-md:whitespace-nowrap tracking-wider md:tracking-widest">Quantum Shield Active</span>
           </div>
-          <button className="px-6 py-2.5 bg-indigo-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">
+          <button className="px-5 md:px-6 py-2.5 max-md:min-h-[40px] max-md:text-sm max-md:text-white max-md:shrink-0 bg-indigo-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">
             <Lock size={18} /> Lock All
           </button>
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-12 gap-6 p-10 overflow-hidden">
+      <div className="flex-none md:flex-1 flex flex-col md:grid md:grid-cols-12 gap-4 md:gap-6 p-4 md:p-10 overflow-visible md:overflow-hidden">
         {/* Security Overview */}
-        <div className="col-span-4 space-y-6">
-          <div className="p-8 rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl text-center space-y-6 py-12">
-            <div className="w-24 h-24 bg-indigo-500/10 rounded-[2rem] flex items-center justify-center mx-auto text-indigo-500 relative">
+        <div className="md:col-span-4 space-y-4 md:space-y-6">
+          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl text-center space-y-5 md:space-y-6 py-8 md:py-12 ${card}`}>
+            <div className="w-20 h-20 md:w-24 md:h-24 bg-indigo-500/10 rounded-[1.75rem] md:rounded-[2rem] flex items-center justify-center mx-auto text-indigo-500 relative">
               <Shield size={48} />
               <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-indigo-600 rounded-xl border-4 border-[#0F172A] flex items-center justify-center text-white">
                 <Fingerprint size={20} />
               </div>
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-black tracking-tight">System Integrity</h2>
-              <p className="text-xs text-slate-500 font-medium px-10">Your architectural nodes are protected with AES-256-GCM encryption.</p>
+              <h2 className="text-lg md:text-2xl font-black tracking-tight">System Integrity</h2>
+              <p className="text-[13px] md:text-xs text-slate-500 font-medium px-2 md:px-10">Your architectural nodes are protected with AES-256-GCM encryption.</p>
             </div>
-            <div className="grid grid-cols-2 gap-4 px-4 pt-4">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 px-0 md:px-4 pt-2 md:pt-4">
+              <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
                 <div className="text-lg font-black">2.4k</div>
-                <div className="text-[8px] font-black text-slate-500 uppercase">Encrypted Nodes</div>
+                <div className="text-[10px] md:text-[8px] font-black text-slate-500 uppercase">Encrypted Nodes</div>
               </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
                 <div className="text-lg font-black">Zero</div>
-                <div className="text-[8px] font-black text-slate-500 uppercase">Breach Attempts</div>
+                <div className="text-[10px] md:text-[8px] font-black text-slate-500 uppercase">Breach Attempts</div>
               </div>
             </div>
           </div>
 
-          <div className="p-8 rounded-[2.5rem] border border-white/5 bg-white/2 backdrop-blur-xl space-y-6">
+          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-white/5 bg-white/2 backdrop-blur-xl space-y-4 md:space-y-6 ${card}`}>
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
               <Key size={16} /> Access Protocols
             </h3>
@@ -67,8 +72,8 @@ const Vault = ({ theme }) => {
                 { label: 'Biometric Access', status: 'Active' },
                 { label: 'Cloud Handshake', status: 'Optimal' },
               ].map((p, idx) => (
-                <div key={idx} className="flex justify-between items-center py-2 border-b border-white/5">
-                  <span className="text-xs font-bold text-slate-400">{p.label}</span>
+                <div key={idx} className={`flex justify-between items-center py-2 border-b border-white/5 ${line}`}>
+                  <span className={`text-[13px] md:text-xs font-bold text-slate-400 ${lt ? 'max-md:text-slate-600' : ''}`}>{p.label}</span>
                   <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{p.status}</span>
                 </div>
               ))}
@@ -77,36 +82,36 @@ const Vault = ({ theme }) => {
         </div>
 
         {/* Vault Files */}
-        <div className="col-span-8 rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl p-8 overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-black uppercase tracking-widest">Confidential Assets</h2>
-            <div className="flex gap-2">
-              <button className="p-2 hover:bg-white/5 rounded-lg text-slate-500 transition-all"><Eye size={20} /></button>
-              <button className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all">Export Archive</button>
+        <div className={`md:col-span-8 rounded-2xl md:rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl p-4 md:p-8 overflow-hidden flex flex-col ${card}`}>
+          <div className="flex items-center justify-between gap-2 mb-4 md:mb-8">
+            <h2 className="text-base md:text-xl font-black uppercase tracking-wider md:tracking-widest max-md:min-w-0">Confidential Assets</h2>
+            <div className="flex gap-1 md:gap-2 max-md:shrink-0">
+              <button className="p-2.5 md:p-2 hover:bg-white/5 rounded-lg text-slate-500 transition-all"><Eye size={20} /></button>
+              <button className={`px-3 md:px-4 py-2 max-md:min-h-[40px] bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all ${tile}`}>Export Archive</button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar space-y-4">
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 md:space-y-4">
             {[
               { name: 'Core_System_Architecture.json', size: '1.2 MB', date: '2026-05-14' },
               { name: 'Financial_Forensics_Silver.vault', size: '4.8 MB', date: '2026-05-12' },
               { name: 'Biometric_Master_Identity.key', size: '256 KB', date: '2026-05-10' },
               { name: 'User_Preference_Matrix.enc', size: '128 KB', date: '2026-05-08' },
             ].map((f, idx) => (
-              <div key={idx} className="p-5 rounded-2xl border border-white/5 bg-white/2 hover:bg-white/5 transition-all flex items-center justify-between group">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-indigo-500">
+              <div key={idx} className={`p-3 md:p-5 rounded-2xl border border-white/5 bg-white/2 hover:bg-white/5 transition-all flex items-center justify-between gap-2 md:gap-0 group ${tile}`}>
+                <div className="flex items-center gap-3 md:gap-4 max-md:min-w-0">
+                  <div className={`w-10 h-10 max-md:shrink-0 rounded-xl bg-white/5 flex items-center justify-center text-indigo-500 ${lt ? 'max-md:bg-indigo-50' : ''}`}>
                     <Lock size={18} />
                   </div>
-                  <div>
-                    <div className="font-bold text-sm mb-0.5">{f.name}</div>
-                    <div className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{f.size} • Last Modified {f.date}</div>
+                  <div className="max-md:min-w-0">
+                    <div className="font-bold text-sm mb-0.5 max-md:truncate">{f.name}</div>
+                    <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wider md:tracking-widest">{f.size} • Last Modified {f.date}</div>
                   </div>
                 </div>
-                <button className="p-2 text-slate-700 hover:text-white transition-colors"><MoreVertical size={20} /></button>
+                <button className="p-2.5 md:p-2 -mr-1 md:mr-0 max-md:shrink-0 text-slate-700 hover:text-white transition-colors"><MoreVertical size={20} /></button>
               </div>
             ))}
             {/* Empty State Mock */}
-            <div className="mt-10 p-10 rounded-[2.5rem] border border-dashed border-white/10 text-center space-y-2">
+            <div className={`mt-6 md:mt-10 p-6 md:p-10 rounded-2xl md:rounded-[2.5rem] border border-dashed border-white/10 text-center space-y-2 ${lt ? 'max-md:border-slate-300' : ''}`}>
               <div className="text-sm font-bold text-slate-600">Drop files here to encrypt and store them in the vault.</div>
               <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Supports all binary formats</div>
             </div>

@@ -10,6 +10,7 @@ import 'reactflow/dist/style.css'
 import NoteNode from './NoteNode'
 import ClusterNode from './ClusterNode'
 import WorkspaceNode from './WorkspaceNode'
+import useIsMobile from '../../../../hooks/useIsMobile'
 
 const nodeTypes = {
   workspace: WorkspaceNode,
@@ -24,7 +25,13 @@ const nodeTypes = {
 const H_GAP = 220   // horizontal gap between siblings
 const V_GAP = 140   // vertical gap between depth levels
 
-function layoutTree(nodes, edges) {
+// Phone layout: the tree flows left-to-right so it grows down the tall screen
+// (siblings stacked vertically) and nodes stay legible after fitView.
+const M_SIBLING_GAP = 96   // vertical gap between siblings (mobile)
+const M_DEPTH_GAP = 135    // horizontal gap between depth levels (mobile)
+const M_NODE_SIZE = { workspace: [128, 64], cluster: [104, 77], note: [76, 76] }
+
+function layoutTree(nodes, edges, horizontal = false) {
   if (!nodes?.length) return nodes
 
   // Build adjacency: parentId -> [childId]
@@ -94,6 +101,35 @@ function layoutTree(nodes, edges) {
   const totalWidth = Math.max(leafCount[root.id] * H_GAP, H_GAP)
   assignX(root.id, 0, totalWidth)
 
+  if (horizontal) {
+    // Swap axes: depth -> X, sibling subdivision -> Y (scaled to the mobile gaps).
+    // Positions are node top-left corners, so offset by half the node size to centre them.
+    const rootY = (posMap[root.id]?.x || 0) * (M_SIBLING_GAP / H_GAP)
+    const byId = Object.fromEntries(nodes.map(n => [n.id, n]))
+    const absTopLeft = (n) => {
+      const p = posMap[n.id]
+      if (!p) return null
+      const [w, h] = M_NODE_SIZE[n.type] || M_NODE_SIZE.note
+      return {
+        x: (p.y / V_GAP) * M_DEPTH_GAP - w / 2,
+        y: p.x * (M_SIBLING_GAP / H_GAP) - rootY - h / 2
+      }
+    }
+    return nodes.map(n => {
+      const abs = absTopLeft(n)
+      if (!abs) return n
+      // ReactFlow treats `parentId` positions as relative to the parent node
+      const parent = n.parentId && byId[n.parentId]
+      const parentAbs = parent ? absTopLeft(parent) : null
+      return {
+        ...n,
+        sourcePosition: 'right',
+        targetPosition: 'left',
+        position: parentAbs ? { x: abs.x - parentAbs.x, y: abs.y - parentAbs.y } : abs
+      }
+    })
+  }
+
   // Apply positions, centering the root
   const rootX = posMap[root.id]?.x || 0
   return nodes.map(n => ({
@@ -127,13 +163,21 @@ const FlowChartView = ({
   }, [setActiveNode, setIsEditorOpen, setDashboardNodes, nodes])
 
   const { fitView } = useReactFlow()
+  const isMobile = useIsMobile()
+
+  // Phone: tight padding + higher minZoom so nodes stay readable (pan for the rest)
+  const fitOptions = useMemo(() => (
+    isMobile
+      ? { padding: 0.08, minZoom: 0.55, maxZoom: 1.2 }
+      : { padding: 0.38, minZoom: 0.3, maxZoom: 1.5 }
+  ), [isMobile])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fitView({ duration: 800, padding: 0.38, minZoom: 0.3, maxZoom: 1.5 })
+      fitView({ duration: 800, ...fitOptions })
     }, 400)
     return () => clearTimeout(timer)
-  }, [isEditorOpen, isAiOpen, theme, nodes.length, fitView])
+  }, [isEditorOpen, isAiOpen, theme, nodes.length, fitView, fitOptions])
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge({
     ...params,
@@ -143,8 +187,8 @@ const FlowChartView = ({
 
   // Apply hierarchical layout every time nodes/edges change
   const laidOutNodes = useMemo(
-    () => layoutTree(nodes, edges),
-    [nodes, edges]
+    () => layoutTree(nodes, edges, isMobile),
+    [nodes, edges, isMobile]
   )
 
   const styledEdges = useMemo(() => edges.map(e => ({
@@ -164,6 +208,13 @@ const FlowChartView = ({
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
+        {...(isMobile ? {
+          fitViewOptions: fitOptions,
+          // Layout is computed, so dragging is meaningless on touch — let drags pan the canvas
+          nodesDraggable: false,
+          nodesConnectable: false,
+          minZoom: 0.3
+        } : {})}
         proOptions={{ hideAttribution: true }}
         className="touch-none"
       >
@@ -189,6 +240,9 @@ const FlowChartView = ({
             }
             .react-flow__controls-button:hover { background: ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : '#F1F5F9'} !important; }
             .react-flow__controls-button svg { fill: ${theme === 'dark' ? '#FFFFFF' : '#0F172A'} !important; width: 14px !important; }
+            @media (max-width: 767px) {
+              .react-flow__controls-button { width: 40px !important; height: 40px !important; }
+            }
           `}</style>
         </Controls>
       </ReactFlow>

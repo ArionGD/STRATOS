@@ -38,8 +38,8 @@ const BranchNode = ({ data, selected, theme }) => {
       </div>
 
       {/* Label */}
-      <div className="mt-3 text-center">
-        <div className={`text-[11px] font-bold tracking-tight transition-colors ${
+      <div className="mt-2 md:mt-3 text-center">
+        <div className={`text-[13px] md:text-[11px] font-bold tracking-tight whitespace-nowrap md:whitespace-normal transition-colors ${
           selected 
             ? colors.text 
             : (theme === 'dark' ? 'text-slate-400' : 'text-slate-600')

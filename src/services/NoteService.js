@@ -1,11 +1,9 @@
 /**
  * Stratos Note Service
- * Automatically handles synchronization between UI and Backend (SQLite/Dexie).
+ * Automatically handles synchronization between UI and Backend (SQLite / Stratos API).
  */
 import { invoke } from '@tauri-apps/api/core'
-import { browserDB } from './BrowserDB'
-
-const isTauri = !!window.__TAURI_INTERNALS__;
+import { WebApi, isTauri } from './WebApi'
 
 export const NoteService = {
   // Save or Update a note
@@ -31,13 +29,12 @@ export const NoteService = {
         return { success: false, error: err };
       }
     } else {
-      // BROWSER MODE: Use Dexie (Upsert)
+      // WEB MODE: Stratos API (Upsert)
       try {
-        await browserDB.notes.put(noteData);
-        console.log('📝 Note Synced to Browser DB');
+        await WebApi.put(`/notes/${encodeURIComponent(noteId)}`, noteData);
         return { success: true, id: noteId };
       } catch (err) {
-        console.error('Dexie Sync Error:', err);
+        console.error('Web Sync Error:', err);
         return { success: false, error: err };
       }
     }
@@ -54,19 +51,11 @@ export const NoteService = {
         return { clusters: [], notes: [] };
       }
     } else {
-      // BROWSER MODE: Fetch from Dexie
+      // WEB MODE: Stratos API
       try {
-        const clusters = await browserDB.clusters
-          .where('workspace_id')
-          .equals(workspaceId)
-          .toArray();
-        const notes = await browserDB.notes
-          .where('workspace_id')
-          .equals(workspaceId)
-          .toArray();
-        return { clusters, notes };
+        return await WebApi.get(`/workspaces/${encodeURIComponent(workspaceId)}/data`);
       } catch (err) {
-        console.error('Browser Data Fetch Error:', err);
+        console.error('Web Data Fetch Error:', err);
         return { clusters: [], notes: [] };
       }
     }

@@ -79,19 +79,25 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
       const newNodes = [rootNode];
       const newEdges = [];
 
+      // Items saved against the workspace id (or a missing node) hang off the root,
+      // otherwise ReactFlow throws "Parent node not found" and blanks the dashboard
+      const knownIds = new Set([rootId, ...clusters.map(c => c.id), ...notes.map(n => n.id)]);
+      const parentOf = (pid) => (knownIds.has(pid) ? pid : rootId);
+
       // Map Clusters to Nodes
       clusters.forEach((c, idx) => {
         const id = c.id;
+        const parentId = parentOf(c.parent_id);
         newNodes.push({
           id,
           type: 'cluster',
-          parentId: c.parent_id,
+          parentId,
           position: { x: 300 + (idx * 100), y: 150 },
           data: { label: c.name, type: 'cluster' }
         });
         newEdges.push({
-          id: `e-${c.parent_id}-${id}`,
-          source: c.parent_id,
+          id: `e-${parentId}-${id}`,
+          source: parentId,
           target: id,
           animated: true,
           style: { stroke: '#F59E0B', strokeWidth: 2, opacity: 0.3 }
@@ -101,16 +107,17 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
       // Map Notes to Nodes
       notes.forEach((n, idx) => {
         const id = n.id;
+        const parentId = parentOf(n.parent_id);
         newNodes.push({
           id,
           type: 'note',
-          parentId: n.parent_id,
+          parentId,
           position: { x: 300 + (idx * 75), y: 250 },
           data: { label: n.title, type: 'note' }
         });
         newEdges.push({
-          id: `e-${n.parent_id}-${id}`,
-          source: n.parent_id,
+          id: `e-${parentId}-${id}`,
+          source: parentId,
           target: id,
           animated: true,
           style: { stroke: '#3B82F6', strokeWidth: 2, opacity: 0.3 }
@@ -127,7 +134,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
   return (
     <div className="w-full h-full relative overflow-hidden">
       {/* Floating Command Bar */}
-      <div className="absolute top-6 left-6 z-[1000]">
+      <div className="absolute top-3 left-3 right-3 md:right-auto md:top-6 md:left-6 z-[1000]">
         <CommandBar 
           theme={theme}
           activeWorkspace={activeWorkspace}
@@ -200,14 +207,14 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
         )}
 
         {displayMode === 'board' && (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-transparent">
+          <div className="w-full h-full flex flex-col items-center justify-center px-6 md:px-0 text-center md:text-left bg-transparent">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-2xl ${theme === 'dark' ? 'bg-slate-800 shadow-black/50' : 'bg-white shadow-slate-200/50'}`}>
               <span className="text-2xl opacity-60">🚧</span>
             </div>
-            <h2 className={`text-xl font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
+            <h2 className={`text-lg md:text-xl font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
               {displayMode} Engine
             </h2>
-            <p className="text-xs font-bold tracking-widest uppercase text-amber-500">
+            <p className="text-[11px] md:text-xs font-bold tracking-widest uppercase text-amber-500">
               Module Offline • Coming Soon
             </p>
           </div>

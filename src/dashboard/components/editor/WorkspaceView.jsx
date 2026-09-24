@@ -8,38 +8,39 @@ const WorkspaceView = ({ onClose, theme, workspace, nodes }) => {
 
   return (
     <div
-      className={`h-full w-full flex flex-col border-l transition-colors duration-500 overflow-hidden ${
+      className={`h-full w-full flex flex-col border-l-0 md:border-l transition-colors duration-500 overflow-hidden ${
         theme === 'dark' 
           ? 'bg-[#0F172A]/60 backdrop-blur-3xl border-white/10 text-white' 
           : 'bg-white border-slate-200 text-slate-900'
       }`}
     >
       {/* Header */}
-      <div className="h-20 flex items-center justify-between px-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500">
+      <div className="h-16 md:h-20 shrink-0 md:shrink flex items-center justify-between gap-3 md:gap-0 px-4 md:px-6 border-b border-white/10">
+        <div className="flex items-center gap-3 min-w-0 md:min-w-[auto]">
+          <div className="shrink-0 md:shrink w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500">
             <Network size={18} />
           </div>
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest">{workspace?.name} manifest</h3>
-            <p className="text-[10px] text-slate-500 font-medium italic">
+          <div className="min-w-0 md:min-w-[auto]">
+            <h3 className="truncate md:overflow-visible md:whitespace-normal text-[13px] md:text-sm font-black uppercase tracking-wider md:tracking-widest">{workspace?.name} manifest</h3>
+            <p className="truncate md:overflow-visible md:whitespace-normal text-[10px] text-slate-500 font-medium italic">
               Global Root Authority Active
             </p>
           </div>
         </div>
         <button 
           onClick={onClose}
-          className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
+          aria-label="Close panel"
+          className="p-2.5 -mr-1.5 md:mr-0 md:p-2 shrink-0 md:shrink hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
         >
           <X size={20} />
         </button>
       </div>
 
       {/* Manifest Body */}
-      <div className="flex-1 overflow-y-auto p-8 space-y-8">
+      <div className="flex-1 overflow-y-auto p-5 space-y-6 md:p-8 md:space-y-8">
         <div>
-          <h1 className="text-4xl font-black mb-2 tracking-tighter">{workspace?.name}</h1>
-          <div className="flex items-center gap-4">
+          <h1 className="text-3xl md:text-4xl break-words md:break-normal font-black mb-2 tracking-tighter">{workspace?.name}</h1>
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2 md:gap-4">
             <div className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest ${theme === 'dark' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
               Central Root
             </div>
@@ -51,7 +52,7 @@ const WorkspaceView = ({ onClose, theme, workspace, nodes }) => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Architecture Units</div>
             <div className="text-3xl font-black text-amber-500">{childNodes.length}</div>
@@ -72,24 +73,24 @@ const WorkspaceView = ({ onClose, theme, workspace, nodes }) => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.1 }}
-                className={`flex items-center justify-between p-4 rounded-xl border transition-all hover:scale-[1.01] ${
+                className={`flex items-center justify-between gap-3 md:gap-0 p-3 md:p-4 rounded-xl border transition-all hover:scale-[1.01] ${
                   theme === 'dark' 
                     ? 'bg-white/5 border-white/5 hover:bg-white/10' 
                     : 'bg-white border-slate-100 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-slate-50'}`}>
+                <div className="flex items-center gap-3 md:gap-4 min-w-0 md:min-w-[auto]">
+                  <div className={`shrink-0 md:shrink w-10 h-10 rounded-lg flex items-center justify-center ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-slate-50'}`}>
                     {node.data.label.toLowerCase().includes('resource') ? <Cpu size={20} className="text-blue-500" /> : 
                      node.data.label.toLowerCase().includes('security') ? <ShieldCheck size={20} className="text-green-500" /> : 
                      <LayoutGrid size={20} className="text-amber-500" />}
                   </div>
-                  <div>
-                    <div className="text-[13px] font-black uppercase tracking-tight">{node.data.label}</div>
-                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">ID: {node.id.split('-')[0]}</div>
+                  <div className="min-w-0 md:min-w-[auto]">
+                    <div className="truncate md:overflow-visible md:whitespace-normal text-[13px] font-black uppercase tracking-tight">{node.data.label}</div>
+                    <div className="truncate md:overflow-visible md:whitespace-normal text-[10px] text-slate-500 font-bold uppercase tracking-widest">ID: {node.id.split('-')[0]}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0 md:shrink">
                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500/40"></div>
                    <span className="text-[10px] font-bold text-slate-500 uppercase">Operational</span>
                 </div>
@@ -100,14 +101,14 @@ const WorkspaceView = ({ onClose, theme, workspace, nodes }) => {
       </div>
 
       {/* Footer */}
-      <div className={`p-6 border-t flex items-center justify-between ${theme === 'dark' ? 'border-white/10' : 'border-slate-100'}`}>
+      <div className={`p-4 pb-5 gap-3 md:gap-0 md:p-6 shrink-0 md:shrink border-t flex items-center justify-between ${theme === 'dark' ? 'border-white/10' : 'border-slate-100'}`}>
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">
+          <button className="flex items-center gap-2 min-h-[40px] md:min-h-0 text-xs font-bold text-slate-400 hover:text-white transition-colors">
             <Share2 size={16} />
             Export Architecture
           </button>
         </div>
-        <button className="px-6 py-2 bg-amber-500 rounded-full text-xs font-bold text-[#0F172A] shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition-all active:scale-95">
+        <button className="shrink-0 md:shrink h-10 md:h-auto px-5 md:px-6 py-2 bg-amber-500 rounded-full text-xs font-bold text-[#0F172A] shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition-all active:scale-95">
           Deploy Hierarchy
         </button>
       </div>

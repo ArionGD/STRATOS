@@ -4,6 +4,7 @@ import { MessageSquare, Send, ThumbsUp, ThumbsDown, Star, Sparkles, Check } from
 
 const Feedback = ({ theme, onClose }) => {
   const [type, setType] = useState('feature')
+  const lc = theme === 'dark' ? '' : 'max-md:bg-white max-md:border max-md:border-slate-200 max-md:shadow-sm'
   const [submitted, setSubmitted] = useState(false)
 
   const handleSubmit = (e) => {
@@ -19,12 +20,12 @@ const Feedback = ({ theme, onClose }) => {
       className="flex-1 flex flex-col h-full relative z-10 overflow-hidden"
     >
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px]"></div>
+        <div className="absolute top-1/4 left-1/4 w-[250px] h-[250px] md:w-[500px] md:h-[500px] bg-purple-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-blue-600/10 rounded-full blur-[100px]"></div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar py-10">
-        <div className="min-h-full flex flex-col items-center justify-center p-10">
+      <div className="flex-1 overflow-y-auto no-scrollbar py-2 md:py-10">
+        <div className="min-h-full flex flex-col items-center justify-center p-4 md:p-10">
           <AnimatePresence mode="wait">
             {!submitted ? (
               <motion.div 
@@ -32,31 +33,31 @@ const Feedback = ({ theme, onClose }) => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="w-full max-w-2xl p-10 rounded-[3rem] border border-white/10 bg-white/5 backdrop-blur-3xl shadow-2xl relative overflow-hidden"
+                className={`w-full max-w-2xl p-5 md:p-10 rounded-2xl md:rounded-[3rem] border border-white/10 bg-white/5 backdrop-blur-3xl shadow-2xl relative overflow-hidden ${lc}`}
               >
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-purple-600 to-amber-500"></div>
                 
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg">
-                    <MessageSquare size={28} />
+                <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+                  <div className="w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg">
+                    <MessageSquare size={28} className="w-6 h-6 md:w-7 md:h-7" />
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-black tracking-tight">Architectural Feedback</h2>
-                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Help us evolve the Stratos ecosystem</p>
+                  <div className="min-w-0">
+                    <h2 className="text-[22px] leading-tight md:text-3xl font-black tracking-tight">Architectural Feedback</h2>
+                    <p className="text-[10px] max-md:leading-snug max-md:mt-1 md:text-xs text-slate-500 font-bold uppercase tracking-wider md:tracking-widest">Help us evolve the Stratos ecosystem</p>
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="flex gap-3">
+                <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
+                  <div className="flex gap-2 md:gap-3">
                     {['feature', 'bug', 'ux', 'other'].map(t => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setType(t)}
-                        className={`flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`flex-1 max-md:min-w-0 py-3 rounded-xl border text-[10px] font-black uppercase tracking-wider md:tracking-widest transition-all ${
                           type === t 
                             ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20' 
-                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'
+                            : `bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 ${lc}`
                         }`}
                       >
                         {t}
@@ -69,18 +70,18 @@ const Feedback = ({ theme, onClose }) => {
                     <textarea 
                       required
                       placeholder="Tell us what's on your mind..."
-                      className="w-full h-48 bg-white/5 border border-white/10 rounded-2xl p-6 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium resize-none"
+                      className={`w-full h-40 md:h-48 max-md:text-[15px] bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium resize-none ${lc}`}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pt-4">
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between max-md:gap-4 pt-1 md:pt-4">
                     <div className="flex items-center gap-2">
-                      <button type="button" className="p-2 rounded-lg bg-white/5 text-slate-500 hover:text-green-500 hover:bg-green-500/10 transition-all"><ThumbsUp size={18} /></button>
-                      <button type="button" className="p-2 rounded-lg bg-white/5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-all"><ThumbsDown size={18} /></button>
+                      <button type="button" className={`p-2 max-md:p-3 rounded-lg bg-white/5 text-slate-500 hover:text-green-500 hover:bg-green-500/10 transition-all ${lc}`}><ThumbsUp size={18} /></button>
+                      <button type="button" className={`p-2 max-md:p-3 rounded-lg bg-white/5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-all ${lc}`}><ThumbsDown size={18} /></button>
                     </div>
-                    <div className="flex gap-4">
-                      <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:text-white transition-colors">Cancel</button>
-                      <button type="submit" className="px-8 py-3 bg-blue-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    <div className="flex gap-3 md:gap-4">
+                      <button type="button" onClick={onClose} className="px-3 md:px-6 py-3 rounded-xl font-bold text-slate-500 hover:text-white transition-colors">Cancel</button>
+                      <button type="submit" className="max-md:flex-1 max-md:whitespace-nowrap justify-center px-4 md:px-8 py-3 bg-blue-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all">
                         Dispatch Feedback <Send size={16} />
                       </button>
                     </div>
@@ -94,14 +95,14 @@ const Feedback = ({ theme, onClose }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-6"
               >
-                <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white mx-auto shadow-[0_0_50px_rgba(34,197,94,0.3)]">
-                  <Check size={48} strokeWidth={3} />
+                <div className="w-20 h-20 md:w-24 md:h-24 bg-green-500 rounded-full flex items-center justify-center text-white mx-auto shadow-[0_0_50px_rgba(34,197,94,0.3)]">
+                  <Check size={48} strokeWidth={3} className="w-10 h-10 md:w-12 md:h-12" />
                 </div>
-                <h2 className="text-4xl font-black tracking-tight">Message Received</h2>
-                <p className="text-slate-500 max-w-sm mx-auto font-medium">Your feedback has been integrated into our architectural roadmap. Thank you for contributing.</p>
+                <h2 className="text-[28px] leading-tight md:text-4xl md:leading-10 font-black tracking-tight">Message Received</h2>
+                <p className="text-slate-500 max-w-sm mx-auto font-medium max-md:text-sm max-md:px-2">Your feedback has been integrated into our architectural roadmap. Thank you for contributing.</p>
                 <button 
                   onClick={onClose}
-                  className="mt-8 px-10 py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all"
+                  className={`mt-4 md:mt-8 px-6 md:px-10 py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all ${lc}`}
                 >
                   Return to Command Center
                 </button>

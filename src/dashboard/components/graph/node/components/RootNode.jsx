@@ -25,7 +25,7 @@ const RootNode = ({ data, selected, theme }) => {
 
       {/* Label */}
       <div className="absolute top-8 text-center whitespace-nowrap">
-        <div className={`text-[12px] font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
+        <div className={`text-[14px] md:text-[12px] font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
           {data.label}
         </div>
         <div className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-500 mt-0.5">Root Node</div>

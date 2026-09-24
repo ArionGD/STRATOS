@@ -8,6 +8,15 @@ import Support from './landing/Support'
 import Login from './auth/Login'
 import Register from './auth/Register'
 import Dashboard from './dashboard/Dashboard'
+import useUserStore from './store/useUserStore'
+import { isTauri } from './services/WebApi'
+
+// Hosted web build: the dashboard needs a signed-in session
+function RequireAuth({ children }) {
+  const { user, token } = useUserStore()
+  if (isTauri || (user && token)) return children
+  return <Navigate to="/login" replace />
+}
 
 function App() {
   return (
@@ -23,7 +32,7 @@ function App() {
         {/* Auth & App */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/app" element={<Dashboard />} />
+        <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" />} />
