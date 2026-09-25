@@ -4,7 +4,7 @@ import { Mail, Lock, EyeOff, Layout, ChevronLeft, ChevronRight, Brain, Zap, Shie
 import { invoke } from '@tauri-apps/api/core'
 import { useNavigate, Link } from 'react-router-dom'
 import { WebApi, isTauri } from '../services/WebApi'
-import { isAppMode } from '../app-flow/appMode'
+import { isPhoneFlow } from '../app-flow/appMode'
 import useUserStore from '../store/useUserStore'
 
 // BRAND ICONS (SVG DATA)
@@ -54,8 +54,8 @@ const Register = () => {
           email: formData.email,
           password: formData.password
         });
-        if (isAppMode) {
-          // Android app: sign straight in and open the dashboard
+        if (isPhoneFlow) {
+          // Phone flow: sign straight in and open the dashboard
           const { user, token } = await WebApi.post('/auth/login', {
             username: formData.username,
             password: formData.password
@@ -94,7 +94,7 @@ const Register = () => {
 
       <div className="w-full max-w-[1200px] h-full md:max-h-[780px] bg-white rounded-none md:rounded-[3rem] shadow-none md:shadow-[0_30px_100px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col md:flex-row border-0 md:border border-white relative">
         <div className="flex-1 px-4 py-6 md:py-8 md:px-14 flex flex-col justify-start md:justify-center relative overflow-y-auto custom-scrollbar">
-          <Link to={isAppMode ? '/start' : '/'} className="absolute top-3 left-2 md:top-14 md:left-14 p-3 md:p-2 z-10 md:z-auto text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all group" title="Back to Home"><ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /></Link>
+          <Link to={isPhoneFlow ? '/start' : '/'} className="absolute top-3 left-2 md:top-14 md:left-14 p-3 md:p-2 z-10 md:z-auto text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all group" title="Back to Home"><ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /></Link>
           
           <div className="mt-auto md:mt-0 pt-8 md:pt-0 mb-6 md:mb-8 flex flex-col items-center">
             <div className="flex items-center gap-3 mb-4">

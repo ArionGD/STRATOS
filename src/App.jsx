@@ -11,7 +11,7 @@ import Register from './auth/Register'
 import Dashboard from './dashboard/Dashboard'
 import useUserStore from './store/useUserStore'
 import { isTauri } from './services/WebApi'
-import { isAppMode } from './app-flow/appMode'
+import { isPhoneFlow } from './app-flow/appMode'
 import AppEntry from './app-flow/AppEntry'
 import Welcome from './app-flow/Welcome'
 import Intro from './app-flow/Intro'
@@ -21,14 +21,14 @@ import GetStarted from './app-flow/GetStarted'
 function RequireAuth({ children }) {
   const { user, token } = useUserStore()
   if (isTauri || (user && token)) return children
-  return <Navigate to={isAppMode ? '/' : '/login'} replace />
+  return <Navigate to={isPhoneFlow ? '/' : '/login'} replace />
 }
 
-// Android app: screens slide in like native navigation (opacity only for the
+// Phone flow: screens slide in like native navigation (opacity only for the
 // dashboard, whose fixed bars must not sit inside a transformed parent)
 function AppScreen({ children }) {
   const { pathname } = useLocation()
-  if (!isAppMode) return children
+  if (!isPhoneFlow) return children
   const dashboard = pathname === '/app'
   return (
     <motion.div
@@ -47,9 +47,9 @@ function AppRoutes() {
   return (
     <AppScreen>
       <Routes>
-        {isAppMode ? (
+        {isPhoneFlow ? (
           <>
-            {/* Android app: first-launch flow instead of the marketing site */}
+            {/* Phones and the Android app: first-launch flow instead of the marketing site */}
             <Route path="/" element={<AppEntry />} />
             <Route path="/welcome" element={<Welcome />} />
             <Route path="/intro" element={<Intro />} />

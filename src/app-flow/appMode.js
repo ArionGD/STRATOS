@@ -1,8 +1,8 @@
 /**
  * Stratos App Mode
- * True when running inside the Android app (Expo WebView shell). The app gets
- * its own first-launch flow (welcome -> intro -> get started) and native-feel
- * styling; the website in a normal browser is unchanged.
+ * isAppMode: running inside the Android app (Expo WebView shell); adds native-feel
+ * styling. isPhoneFlow: app or phone-sized browser; gets the first-launch flow
+ * (welcome -> intro -> get started) instead of the marketing landing page.
  *
  * Preview it in any browser with `?app=1` (remembered for the tab; `?app=0` turns it off).
  */
@@ -24,6 +24,12 @@ function detect() {
 }
 
 export const isAppMode = detect()
+
+// The welcome -> intro -> get started flow runs in the Android app and on
+// phone-sized browsers; desktop browsers keep the marketing landing page
+export const isPhoneFlow = isAppMode || (
+  typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+)
 
 if (isAppMode && typeof document !== 'undefined') {
   document.documentElement.classList.add('app-mode')
