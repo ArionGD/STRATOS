@@ -340,6 +340,8 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
       if (saved) {
         setTitle(saved.title || activeNode.data?.label || '')
         editor.commands.setContent(toEditorHtml(saved.content), { emitUpdate: false })
+        // A brand-new note: select the title so you can name it straight away
+        if ((saved.title || '') === 'Untitled' && !saved.content) setTimeout(() => titleRef.current?.select(), 50)
         if (saved.updated_at) {
           const iso = saved.updated_at.includes('T') ? saved.updated_at : saved.updated_at.replace(' ', 'T') + 'Z'
           const d = new Date(iso)

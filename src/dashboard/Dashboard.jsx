@@ -75,6 +75,9 @@ function Dashboard() {
   const [dashboardNodes, setDashboardNodes] = useState([])
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  // Bumped when a panel creates a note/cluster so the graph reloads
+  const [graphReloadKey, setGraphReloadKey] = useState(0)
+  const reloadGraph = () => setGraphReloadKey(k => k + 1)
   const isMobile = useIsMobile()
   const sidebarRef = useRef(null)
   const profileRef = useRef(null)
@@ -645,6 +648,7 @@ function Dashboard() {
                   setIsEditorOpen={setIsEditorOpen}
                   setDashboardNodes={setDashboardNodes}
                   activeNode={activeNode}
+                  reloadKey={graphReloadKey}
                 />
 
                 {/* Right panel toggle (desktop) */}
@@ -705,7 +709,11 @@ function Dashboard() {
                         }}
                         theme={theme}
                         workspace={activeWorkspace}
-                        nodes={dashboardNodes}
+                        isExpanded={isEditorExpanded}
+                        onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
+                        onOpenNode={openSearchResult}
+                        onChanged={reloadGraph}
+                        reloadKey={graphReloadKey}
                       />
                     ) : activeNode?.data?.type === 'cluster' ? (
                       <ClusterView 
@@ -715,6 +723,12 @@ function Dashboard() {
                         }}
                         theme={theme}
                         node={activeNode}
+                        workspace={activeWorkspace}
+                        isExpanded={isEditorExpanded}
+                        onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
+                        onOpenNode={openSearchResult}
+                        onChanged={reloadGraph}
+                        reloadKey={graphReloadKey}
                       />
                     ) : (
                       <NotesEditor 

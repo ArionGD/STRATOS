@@ -1,118 +1,112 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { X, Network, Share2, MoreHorizontal, LayoutGrid, Cpu, ShieldCheck } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { LayoutGrid, Layers, FileText, Plus } from 'lucide-react'
+import { NoteService } from '../../../services/NoteService'
+import { WorkspaceService } from '../../../services/WorkspaceService'
+import { nodeColors, LOOSE_NOTE_COLOR } from '../graph/palette'
+import { wordCount } from '../../../utils/noteContent'
+import { PanelShell, PanelSection, StatRow, ItemRow, InlineCreate, previewOf } from './PanelShell'
 
-const WorkspaceView = ({ onClose, theme, workspace, nodes }) => {
-  // Exclude the root node itself from the child list
-  const childNodes = nodes.filter(n => n.id !== 'root-node');
+// Workspace (root node) panel: what's in this workspace and quick ways to add to it
+const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey }) => {
+  const dark = theme === 'dark'
+  const [data, setData] = useState(null)
+  const [version, setVersion] = useState(0)
+
+  useEffect(() => {
+    if (!workspace?.id) return
+    let cancelled = false
+    NoteService.getWorkspaceData(workspace.id).then(d => { if (!cancelled) setData(d) })
+    return () => { cancelled = true }
+  }, [workspace?.id, reloadKey, version])
+
+  const { clusters = [], notes = [] } = data || {}
+
+  const colors = useMemo(() => nodeColors([
+    { id: 'root-node', type: 'workspace' },
+    ...clusters.map(c => ({ id: c.id, type: 'cluster', parentId: c.parent_id })),
+    ...notes.map(n => ({ id: n.id, type: 'note', parentId: n.parent_id }))
+  ]), [clusters, notes])
+
+  const clusterById = useMemo(() => new Map(clusters.map(c => [c.id, c])), [clusters])
+  const words = useMemo(() => notes.reduce((n, note) => n + wordCount(note.content), 0), [notes])
+  const recent = useMemo(() => [...notes].sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || '')), [notes])
+
+  const refresh = () => { setVersion(v => v + 1); onChanged?.() }
+
+  const open = (kind, item) => onOpenNode?.({
+    kind, id: item.id, title: kind === 'cluster' ? item.name : item.title, parentId: item.parent_id, workspace
+  })
+
+  const newNote = async () => {
+    const note = { id: `note-${Date.now()}`, title: 'Untitled', content: '' }
+    const res = await NoteService.saveNote(note, workspace.id, 'root-node')
+    if (!res?.success) return
+    refresh()
+    onOpenNode?.({ kind: 'note', id: note.id, title: note.title, parentId: 'root-node', workspace })
+  }
+
+  const newCluster = async (name) => {
+    const res = await WorkspaceService.createCluster(`cluster-${Date.now()}`, name, workspace.id, 'root-node')
+    if (res?.success) refresh()
+  }
 
   return (
-    <div
-      className={`h-full w-full flex flex-col border-l-0 md:border-l transition-colors duration-500 overflow-hidden ${
-        theme === 'dark' 
-          ? 'bg-[#0F172A]/60 backdrop-blur-3xl border-white/10 text-white' 
-          : 'bg-white border-slate-200 text-slate-900'
-      }`}
+    <PanelShell
+      theme={theme}
+      icon={LayoutGrid}
+      title={workspace?.name || 'Workspace'}
+      subtitle="Workspace"
+      onClose={onClose}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      footer={<span>{clusters.length} clusters · {notes.length} notes</span>}
     >
-      {/* Header */}
-      <div className="h-16 md:h-20 shrink-0 md:shrink flex items-center justify-between gap-3 md:gap-0 px-4 md:px-6 border-b border-white/10">
-        <div className="flex items-center gap-3 min-w-0 md:min-w-[auto]">
-          <div className="shrink-0 md:shrink w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500">
-            <Network size={18} />
-          </div>
-          <div className="min-w-0 md:min-w-[auto]">
-            <h3 className="truncate md:overflow-visible md:whitespace-normal text-[13px] md:text-sm font-black uppercase tracking-wider md:tracking-widest">{workspace?.name} manifest</h3>
-            <p className="truncate md:overflow-visible md:whitespace-normal text-[10px] text-slate-500 font-medium italic">
-              Global Root Authority Active
-            </p>
-          </div>
-        </div>
-        <button 
-          onClick={onClose}
-          aria-label="Close panel"
-          className="p-2.5 -mr-1.5 md:mr-0 md:p-2 shrink-0 md:shrink hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
-        >
-          <X size={20} />
+      <h1 className="text-[28px] md:text-[34px] font-bold tracking-tight leading-tight">{workspace?.name || 'Workspace'}</h1>
+      <p className={`mt-1.5 text-[13.5px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        Everything in this workspace. Open a cluster or note, or add something new.
+      </p>
+
+      <div className="mt-6">
+        <StatRow theme={theme} items={[
+          { label: 'Clusters', value: data ? clusters.length : '–' },
+          { label: 'Notes', value: data ? notes.length : '–' },
+          { label: 'Words', value: data ? (words > 999 ? `${(words / 1000).toFixed(1)}k` : words) : '–' }
+        ]} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button onClick={newNote} className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold shadow-sm shadow-amber-500/25">
+          <Plus size={15} /> New note
         </button>
       </div>
 
-      {/* Manifest Body */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-6 md:p-8 md:space-y-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl break-words md:break-normal font-black mb-2 tracking-tighter">{workspace?.name}</h1>
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2 md:gap-4">
-            <div className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest ${theme === 'dark' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
-              Central Root
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-bold uppercase tracking-widest">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-              System Online
-            </div>
-          </div>
+      <PanelSection theme={theme} title="Clusters" count={clusters.length} action={<InlineCreate theme={theme} label="New cluster" placeholder="Cluster name" onCreate={newCluster} />}>
+        {data && clusters.length === 0 && (
+          <p className={`px-3 py-3 text-[13px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No clusters yet. Clusters group related notes.</p>
+        )}
+        <div className="-mx-3">
+          {clusters.map(c => {
+            const count = notes.filter(n => n.parent_id === c.id).length
+            return (
+              <ItemRow key={c.id} theme={theme} icon={Layers} color={colors.get(c.id)} title={c.name}
+                meta={`${count} ${count === 1 ? 'note' : 'notes'}`} onClick={() => open('cluster', c)} />
+            )
+          })}
         </div>
+      </PanelSection>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 md:gap-4">
-          <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Architecture Units</div>
-            <div className="text-3xl font-black text-amber-500">{childNodes.length}</div>
-          </div>
-          <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Status</div>
-            <div className="text-[13px] font-bold text-green-500 uppercase tracking-widest mt-2">Active Hierarchy</div>
-          </div>
+      <PanelSection theme={theme} title="Notes" count={notes.length}>
+        {data && notes.length === 0 && (
+          <p className={`px-3 py-3 text-[13px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No notes yet. Use New note to start writing.</p>
+        )}
+        <div className="-mx-3">
+          {recent.map(n => (
+            <ItemRow key={n.id} theme={theme} icon={FileText} color={colors.get(n.id) || LOOSE_NOTE_COLOR} title={n.title}
+              meta={clusterById.get(n.parent_id)?.name || 'No cluster'} preview={previewOf(n.content)} onClick={() => open('note', n)} />
+          ))}
         </div>
-
-        {/* Node List */}
-        <div className="space-y-4">
-          <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Connected Architectural Units</h3>
-          <div className="space-y-2">
-            {childNodes.map((node, idx) => (
-              <motion.div 
-                key={node.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className={`flex items-center justify-between gap-3 md:gap-0 p-3 md:p-4 rounded-xl border transition-all hover:scale-[1.01] ${
-                  theme === 'dark' 
-                    ? 'bg-white/5 border-white/5 hover:bg-white/10' 
-                    : 'bg-white border-slate-100 hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-center gap-3 md:gap-4 min-w-0 md:min-w-[auto]">
-                  <div className={`shrink-0 md:shrink w-10 h-10 rounded-lg flex items-center justify-center ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-slate-50'}`}>
-                    {node.data.label.toLowerCase().includes('resource') ? <Cpu size={20} className="text-blue-500" /> : 
-                     node.data.label.toLowerCase().includes('security') ? <ShieldCheck size={20} className="text-green-500" /> : 
-                     <LayoutGrid size={20} className="text-amber-500" />}
-                  </div>
-                  <div className="min-w-0 md:min-w-[auto]">
-                    <div className="truncate md:overflow-visible md:whitespace-normal text-[13px] font-black uppercase tracking-tight">{node.data.label}</div>
-                    <div className="truncate md:overflow-visible md:whitespace-normal text-[10px] text-slate-500 font-bold uppercase tracking-widest">ID: {node.id.split('-')[0]}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 md:shrink">
-                   <div className="w-1.5 h-1.5 rounded-full bg-blue-500/40"></div>
-                   <span className="text-[10px] font-bold text-slate-500 uppercase">Operational</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className={`p-4 pb-5 gap-3 md:gap-0 md:p-6 shrink-0 md:shrink border-t flex items-center justify-between ${theme === 'dark' ? 'border-white/10' : 'border-slate-100'}`}>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 min-h-[40px] md:min-h-0 text-xs font-bold text-slate-400 hover:text-white transition-colors">
-            <Share2 size={16} />
-            Export Architecture
-          </button>
-        </div>
-        <button className="shrink-0 md:shrink h-10 md:h-auto px-5 md:px-6 py-2 bg-amber-500 rounded-full text-xs font-bold text-[#0F172A] shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition-all active:scale-95">
-          Deploy Hierarchy
-        </button>
-      </div>
-    </div>
+      </PanelSection>
+    </PanelShell>
   )
 }
 

@@ -7,7 +7,7 @@ import CommandBar from './CommandBar'
 import { NoteService } from '../../../services/NoteService'
 import { WorkspaceService } from '../../../services/WorkspaceService'
 
-const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode }) => {
+const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode, reloadKey }) => {
   const [displayMode, setDisplayMode] = useState('graph')
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -132,7 +132,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
     };
 
     loadArchitecture();
-  }, [activeWorkspace, theme]);
+  }, [activeWorkspace, theme, reloadKey]);
 
   return (
     <div className="w-full h-full relative overflow-hidden">
