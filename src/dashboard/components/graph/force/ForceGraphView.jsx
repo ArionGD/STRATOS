@@ -567,17 +567,10 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       s.size = { w, h, dpr }
-      const followed = s.followFocus && s.focus && s.graph.nodes.find(n => n.id === s.focus)
-      if (prev.w && followed) {
-        // A node picked from search stays centred while the panel beside us animates
-        const k = s.transform.k
+      if (prev.w && (prev.w !== w || prev.h !== h)) {
+        // The panel beside us opened/closed: re-fit the whole graph to the new size
         s.tween = null
-        setTransform(zoomIdentity.translate(w / 2 - k * followed.x, h / 2 - k * followed.y).scale(k))
-      } else if (prev.w && (prev.w !== w || prev.h !== h)) {
-        // Keep the same world point in the middle when the panel beside us opens/closes
-        const [cx, cy] = s.transform.invert([prev.w / 2, prev.h / 2])
-        const k = s.transform.k
-        setTransform(zoomIdentity.translate(w / 2 - k * cx, h / 2 - k * cy).scale(k))
+        setTransform(fitTransform())
       } else if (!prev.w) {
         setTransform(zoomIdentity.translate(w / 2, h / 2).scale(isMobile ? 0.9 : 1))
       }
@@ -595,10 +588,29 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
         }
         return !e.button
       })
+      // A pan gesture (drag, no zoom change) glides back to fit the whole graph
+      // once released; zooming is left alone so you can zoom in to read
+      .on('start', (e) => {
+        if (!e.sourceEvent) return
+        clearTimeout(s.refitTimer)
+        s.gesture = { k: e.transform.k, panned: false, zoomed: e.sourceEvent.type === 'wheel' }
+      })
       .on('zoom', (e) => {
         s.transform = e.transform
-        if (e.sourceEvent) { s.userMoved = true; s.tween = null; s.followFocus = false }
+        if (e.sourceEvent) {
+          s.userMoved = true; s.tween = null
+          if (s.gesture) {
+            if (Math.abs(e.transform.k - s.gesture.k) > 0.001) s.gesture.zoomed = true
+            else s.gesture.panned = true
+          }
+        }
         kick()
+      })
+      .on('end', (e) => {
+        const g = s.gesture
+        s.gesture = null
+        if (!e.sourceEvent || !g || !g.panned || g.zoomed) return
+        s.refitTimer = setTimeout(() => flyTo(fitTransform(), 650), 280)
       })
 
     select(canvas).call(s.zoom)
@@ -608,6 +620,7 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
 
     return () => {
       ro.disconnect()
+      clearTimeout(s.refitTimer)
       select(canvas).on('.zoom', null)
       cancelAnimationFrame(s.raf)
       s.raf = 0
@@ -615,15 +628,13 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Focus a node chosen elsewhere (search, Home): pulse it and glide to it
+  // A node chosen elsewhere (search, Home, editor) is highlighted and pulses;
+  // the camera frames the whole graph so it's seen in context
   useEffect(() => {
-    if (!focusId) return
-    const node = s.graph.nodes.find(n => n.id === focusId)
-    if (!node) return
+    if (!focusId || !s.graph.nodes.some(n => n.id === focusId)) return
     s.focus = focusId
     s.userMoved = true
-    s.followFocus = true // keep it centred while the side panel slides open
-    centerOn(node)
+    flyTo(fitTransform(), 600)
   }, [focusId, rfNodes]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-draw when theme changes

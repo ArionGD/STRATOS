@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -180,6 +180,22 @@ const FlowChartView = ({
     return () => clearTimeout(timer)
   }, [isEditorOpen, isAiOpen, theme, nodes.length, fitView, fitOptions])
 
+  // After a pan (drag without zooming) is released, glide back to fit the chart
+  const moveStartZoom = useRef(null)
+  const refitTimer = useRef(null)
+  const onMoveStart = useCallback((event, viewport) => {
+    if (!event) return
+    clearTimeout(refitTimer.current)
+    moveStartZoom.current = viewport.zoom
+  }, [])
+  const onMoveEnd = useCallback((event, viewport) => {
+    if (!event || moveStartZoom.current === null) return
+    const panned = Math.abs(viewport.zoom - moveStartZoom.current) < 0.001
+    moveStartZoom.current = null
+    if (panned) refitTimer.current = setTimeout(() => fitView({ duration: 650, ...fitOptions }), 280)
+  }, [fitView, fitOptions])
+  useEffect(() => () => clearTimeout(refitTimer.current), [])
+
   const onConnect = useCallback((params) => setEdges((eds) => addEdge({
     ...params,
     style: { stroke: theme === 'dark' ? '#1E40AF' : '#E2E8F0' },
@@ -211,6 +227,8 @@ const FlowChartView = ({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onMoveStart={onMoveStart}
+        onMoveEnd={onMoveEnd}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={fitOptions}
