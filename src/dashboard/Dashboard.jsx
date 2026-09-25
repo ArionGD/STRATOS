@@ -786,7 +786,7 @@ function Dashboard() {
           ) : activeView === 'system' ? (
             <System theme={theme} />
           ) : activeView === 'guide' ? (
-            <Guide theme={theme} onClose={() => setActiveView('graph')} />
+            <Guide theme={theme} onClose={() => setActiveView(isMobile ? 'home' : 'graph')} onNavigate={goToView} />
           ) : activeView === 'info' ? (
             <InfoPage theme={theme} onClose={() => setActiveView('graph')} />
           ) : null}
