@@ -726,6 +726,7 @@ function Dashboard() {
                         activeNode={activeNode}
                         workspaceId={activeWorkspace?.id}
                         workspaceName={activeWorkspace?.name}
+                        onOpenNode={openSearchResult}
                         isExpanded={isEditorExpanded}
                         onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
                       />

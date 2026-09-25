@@ -18,7 +18,7 @@ if (!JWT_SECRET) throw new Error('JWT_SECRET must be set in production')
 const DIST = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 const app = express()
-app.use(express.json({ limit: '2mb' }))
+app.use(express.json({ limit: '10mb' })) // notes can carry pasted images
 
 // ---------------------------------------------------------------- helpers
 
@@ -135,7 +135,7 @@ app.get('/api/workspaces/:id/data', requireAuth, route(async (req, res) => {
     [req.params.id]
   )
   const notes = await db.query(
-    'SELECT id, title, content, parent_id, workspace_id FROM notes WHERE workspace_id = $1',
+    'SELECT id, title, content, parent_id, workspace_id, updated_at FROM notes WHERE workspace_id = $1',
     [req.params.id]
   )
   res.json({ clusters: clusters.rows, notes: notes.rows })

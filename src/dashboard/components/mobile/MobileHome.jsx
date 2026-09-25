@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Orbit, FileText, Calendar, ChevronRight, LayoutGrid, Sparkles } from 'lucide-react'
 import { loadOverview } from '../../../services/OverviewService'
+import { noteText } from '../../../utils/noteContent'
 
 // Phone-only home screen: a compact summary of the user's spaces and recent notes
 
@@ -48,7 +49,7 @@ export default function MobileHome({ theme, user, workspaces, onOpenWorkspace, o
 
   const wsById = new Map((data?.workspaces || []).map(w => [w.id, w]))
   const clusterById = new Map((data?.clusters || []).map(c => [c.id, c]))
-  const words = (data?.notes || []).reduce((n, note) => n + (note.content || '').trim().split(/\s+/).filter(Boolean).length, 0)
+  const words = (data?.notes || []).reduce((n, note) => n + noteText(note.content).trim().split(/\s+/).filter(Boolean).length, 0)
 
   const stats = [
     { label: 'Spaces', value: data?.workspaces.length },

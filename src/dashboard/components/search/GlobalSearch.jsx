@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Mic, FileText, Layers, LayoutGrid, CornerDownLeft, X, ArrowLeft } from 'lucide-react'
 import { loadOverview } from '../../../services/OverviewService'
+import { noteText } from '../../../utils/noteContent'
 
 /**
  * Global search across every workspace's clusters and notes.
@@ -33,7 +34,7 @@ function useSearchIndex(active) {
             workspace: wsById.get(c.workspace_id), context: wsById.get(c.workspace_id)?.name || 'Workspace'
           })),
           ...notes.map(n => ({
-            kind: 'note', id: n.id, key: `nt:${n.id}`, title: n.title, parentId: n.parent_id, content: n.content || '',
+            kind: 'note', id: n.id, key: `nt:${n.id}`, title: n.title, parentId: n.parent_id, content: noteText(n.content),
             workspace: wsById.get(n.workspace_id),
             context: [wsById.get(n.workspace_id)?.name, clusterById.get(n.parent_id)?.name].filter(Boolean).join(' · ')
           }))

@@ -14,6 +14,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { WebApi } from '../../services/WebApi'
 import { Page, Card, Grid, IconBadge, ProgressBar, EmptyState, Button, tone } from '../components/ui/Page'
 import { ROOT_COLOR, CLUSTER_COLORS } from '../components/graph/palette'
+import { noteText } from '../../utils/noteContent'
 
 // Activity is mapped onto May 2026, with May 17th as "today"
 const DATA_YEAR = 2026
@@ -110,7 +111,7 @@ const Plan = ({ theme }) => {
             type: 'note',
             title: `Note Synchronized`,
             name: note.title,
-            detail: note.content ? `${note.content.substring(0, 35)}...` : 'Empty content sync'
+            detail: note.content ? `${noteText(note.content).substring(0, 35)}...` : 'Empty content sync'
           });
         });
 

@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { WebApi } from '../../services/WebApi'
 import { Page, Card, Pill, EmptyState, Button, tone } from '../components/ui/Page'
 import { CLUSTER_COLORS, LOOSE_NOTE_COLOR } from '../components/graph/palette'
+import { noteText } from '../../utils/noteContent'
 
 // Same colour a note's cluster has in the graph views (clusters in workspace order)
 const clusterColorOf = (clusters, note) => {
@@ -52,7 +53,7 @@ const Notes = ({ theme }) => {
               allNotes.push({
                 id: note.id,
                 title: note.title,
-                content: note.content || 'Empty note content...',
+                content: noteText(note.content) || 'Empty note content...',
                 workspaceId: ws.id,
                 workspaceName: ws.name,
                 clusterName: cluster ? cluster.name : 'Workspace Root',
@@ -73,7 +74,7 @@ const Notes = ({ theme }) => {
               allNotes.push({
                 id: note.id,
                 title: note.title,
-                content: note.content || 'Empty note content...',
+                content: noteText(note.content) || 'Empty note content...',
                 workspaceId: ws.id,
                 workspaceName: ws.name,
                 clusterName: cluster ? cluster.name : 'Workspace Root',

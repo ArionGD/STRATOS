@@ -7,6 +7,7 @@ import {
 import { NoteService } from '../services/NoteService'
 import { AiService } from '../services/AiService'
 import { ChatHistoryService } from '../services/ChatHistoryService'
+import { noteText } from '../utils/noteContent'
 
 const MarkdownRenderer = ({ text, isDark }) => {
   if (!text) return null
@@ -459,7 +460,7 @@ const MetisChat = ({ onClose, theme, activeWorkspace }) => {
       : `The user has requested BRIEF/STANDARD info. Deliver a highly concise, scannable answer strictly between 150 and 250 words. Keep summaries light, focusing on high-level checklist steps.`
 
     // Compile Context-Aware prompt structure for METIS
-    const notesSummary = workspaceNotes.map(n => `- Note [${n.title}]: ${n.content ? n.content.substring(0, 150) : 'Draft structure'}`).join('\n')
+    const notesSummary = workspaceNotes.map(n => `- Note [${n.title}]: ${n.content ? noteText(n.content).substring(0, 150) : 'Draft structure'}`).join('\n')
     const compiledPrompt = `You are METIS, the active cognitive layer of Stratos Command Center.
 You are helping the user analyze notes, organize structures, map database schemas, and formulate development plans.
 

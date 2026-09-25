@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { WebApi } from '../../services/WebApi'
 import { Page, Card, StatTile, ProgressBar, EmptyState, tone } from '../components/ui/Page'
 import { CLUSTER_COLORS, ROOT_COLOR } from '../components/graph/palette'
+import { noteText } from '../../utils/noteContent'
 
 const Stats = ({ theme }) => {
   const isDark = theme === 'dark';
@@ -58,7 +59,7 @@ const Stats = ({ theme }) => {
             
             // Calculate word counts and check content presence
             for (const note of (notes || [])) {
-              const content = note.content || '';
+              const content = noteText(note.content);
               if (content.trim()) {
                 notesWithContent++;
               }
@@ -99,7 +100,7 @@ const Stats = ({ theme }) => {
             totalNotesCount += ws.notesCount;
 
             for (const note of (notes || [])) {
-              const content = note.content || '';
+              const content = noteText(note.content);
               if (content.trim()) {
                 notesWithContent++;
               }
