@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ChevronDown, Layers, FileText, GitGraph, Box, List, Layout } from 'lucide-react'
+import { Plus, ChevronDown, Layers, FileText, GitGraph, Box, List, Layout, Orbit } from 'lucide-react'
 import useIsMobile from '../../../hooks/useIsMobile'
 
 const CommandBar = ({ 
@@ -206,6 +206,7 @@ const CommandBar = ({
         {/* Display Mode Switcher */}
         <div className={`flex items-center p-0.5 md:p-1 rounded-xl border ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
           {[
+            { id: 'graph', label: 'Graph', icon: Orbit },
             { id: 'chart', label: 'Chart', icon: GitGraph },
             { id: 'node', label: 'Node', icon: Box },
             { id: 'list', label: 'List', icon: List },

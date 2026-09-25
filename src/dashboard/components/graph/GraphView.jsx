@@ -3,12 +3,13 @@ import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow'
 import FlowChartView from './flow/FlowChartView'
 import NodeGraphSymmetryView from './node/NodeGraphSymmetryView'
 import ListView from './list/ListView'
+import ForceGraphView from './force/ForceGraphView'
 import CommandBar from './CommandBar'
 import { NoteService } from '../../../services/NoteService'
 import { WorkspaceService } from '../../../services/WorkspaceService'
 
 const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode }) => {
-  const [displayMode, setDisplayMode] = useState('chart')
+  const [displayMode, setDisplayMode] = useState('graph')
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [newNodeName, setNewNodeName] = useState('')
@@ -156,6 +157,17 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
       {/* Visualization Container - Relies on Dashboard's flex layout for the 50/50 split */}
       <div className="absolute inset-0 w-full h-full">
         {/* Visual Engines */}
+        {displayMode === 'graph' && (
+          <ForceGraphView
+            theme={theme}
+            nodes={nodes}
+            edges={edges}
+            setActiveNode={setActiveNode}
+            setIsEditorOpen={setIsEditorOpen}
+            setDashboardNodes={setDashboardNodes}
+          />
+        )}
+
         {displayMode === 'chart' && (
           <FlowChartView 
             theme={theme}
