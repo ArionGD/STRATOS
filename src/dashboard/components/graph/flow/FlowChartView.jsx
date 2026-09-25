@@ -11,6 +11,7 @@ import NoteNode from './NoteNode'
 import ClusterNode from './ClusterNode'
 import WorkspaceNode from './WorkspaceNode'
 import useIsMobile from '../../../../hooks/useIsMobile'
+import { nodeColors } from '../palette'
 
 const nodeTypes = {
   workspace: WorkspaceNode,
@@ -22,15 +23,16 @@ const nodeTypes = {
 // Assigns positions so that:
 //   • Every node at the same depth shares the same Y coordinate
 //   • Siblings are spaced equally on the X axis
-const H_GAP = 132   // horizontal space per leaf
-const V_GAP = 150   // vertical gap between depth levels
-const D_NODE_SIZE = { workspace: [144, 48], cluster: [72, 72], note: [56, 56] }
+const H_GAP = 164   // horizontal space per leaf
+const V_GAP = 112   // vertical gap between depth levels
+// Node sizes (must match the node components)
+const D_NODE_SIZE = { workspace: [168, 48], cluster: [148, 44], note: [140, 36] }
 
 // Phone layout: the tree flows left-to-right so it grows down the tall screen
 // (siblings stacked vertically) and nodes stay legible after fitView.
-const M_SIBLING_GAP = 96   // vertical gap between siblings (mobile)
-const M_DEPTH_GAP = 168    // horizontal gap between depth levels (mobile; room for connectors)
-const M_NODE_SIZE = { workspace: [128, 64], cluster: [104, 77], note: [76, 76] }
+const M_SIBLING_GAP = 60   // vertical gap between siblings (mobile)
+const M_DEPTH_GAP = 160    // horizontal gap between depth levels (mobile; room for connectors)
+const M_NODE_SIZE = { workspace: [128, 48], cluster: [126, 48], note: [108, 44] }
 
 function layoutTree(nodes, edges, horizontal = false) {
   if (!nodes?.length) return nodes
@@ -203,10 +205,14 @@ const FlowChartView = ({
   }, eds)), [setEdges, theme])
 
   // Apply hierarchical layout every time nodes/edges change
-  const laidOutNodes = useMemo(
-    () => layoutTree(nodes, edges, isMobile),
-    [nodes, edges, isMobile]
-  )
+  // Theme and Graph-view colours ride in `data` (ReactFlow doesn't pass extra props)
+  const laidOutNodes = useMemo(() => {
+    const colors = nodeColors(nodes)
+    return layoutTree(nodes, edges, isMobile).map(n => ({
+      ...n,
+      data: { ...n.data, theme, color: colors.get(n.id) }
+    }))
+  }, [nodes, edges, isMobile, theme])
 
   // Right-angle org-chart connectors; no dash animation (it repaints every frame)
   const styledEdges = useMemo(() => edges.map(e => ({

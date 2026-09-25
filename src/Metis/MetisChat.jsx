@@ -947,7 +947,9 @@ Please formulate a professional system engineering style response adhering to th
       {/* Operational Mode View Switch */}
       {operationalMode === 'chat' ? (
         chatSessionType === null ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8 select-none text-center">
+          // Scrollable when it doesn't fit; my-auto centres it without clipping the top
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col p-8 select-none text-center">
+            <div className="my-auto flex flex-col items-center space-y-8">
             {/* Pulsing Core Icon */}
             <div className="relative flex items-center justify-center">
               <div className="absolute inset-0 w-24 h-24 rounded-full bg-blue-500/10 blur-xl animate-pulse"></div>
@@ -1031,11 +1033,12 @@ Please formulate a professional system engineering style response adhering to th
                 </p>
               </button>
             </div>
+            </div>
           </div>
         ) : (
           <>
             {/* Messages List */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-4 max-md:no-scrollbar md:[scrollbar-width:thin]">
             {messages.map(msg => (
               <div 
                 key={msg.id} 
@@ -1122,7 +1125,8 @@ Please formulate a professional system engineering style response adhering to th
           </form>
         </>)
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6 select-none overflow-y-auto no-scrollbar">
+        <div className="flex-1 min-h-0 flex flex-col p-8 select-none overflow-y-auto overscroll-contain no-scrollbar">
+          <div className="my-auto flex flex-col items-center space-y-6">
           <div className="relative flex items-center justify-center">
             {/* Pulsing Core and Radar scans */}
             <div className="absolute w-32 h-32 rounded-full border border-indigo-500/20 animate-ping"></div>
@@ -1163,6 +1167,7 @@ Please formulate a professional system engineering style response adhering to th
             <div className="flex items-center gap-1.5 font-bold text-amber-500">
               <span>[WARN] Awaiting configuration parameters from Stratus user...</span>
             </div>
+          </div>
           </div>
         </div>
       )}

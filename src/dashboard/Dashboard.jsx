@@ -725,6 +725,7 @@ function Dashboard() {
                         theme={theme}
                         activeNode={activeNode}
                         workspaceId={activeWorkspace?.id}
+                        workspaceName={activeWorkspace?.name}
                         isExpanded={isEditorExpanded}
                         onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
                       />

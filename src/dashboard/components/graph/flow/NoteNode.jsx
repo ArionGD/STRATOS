@@ -1,24 +1,24 @@
 import React, { memo } from 'react'
 import { Handle, Position } from 'reactflow'
+import { FileText } from 'lucide-react'
 
-const NoteNode = ({ data, selected, theme, targetPosition, sourcePosition }) => {
+// Chart view note, tinted with its cluster's colour.
+// Size must match NODE_SIZE.note in FlowChartView.
+const NoteNode = ({ data, selected, targetPosition, sourcePosition }) => {
+  const dark = data.theme === 'dark'
+  const color = data.color || '#F59E0B'
   return (
-    <div className={`
-      w-[76px] h-[76px] md:w-14 md:h-14 flex flex-col items-center justify-center rounded-full border shadow-xl transition-all duration-200 text-center p-1
-      ${selected 
-        ? 'border-amber-500 ring-2 ring-amber-500/20 scale-105 bg-amber-500/20' 
-        : `border-amber-500/30 backdrop-blur-xl text-slate-400 hover:border-amber-500/50 ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-white'}`}
-    `}>
-      <Handle type="target" position={targetPosition || Position.Top} className="w-1 h-1 !bg-amber-500 border-none" />
-      
-      <div className="flex flex-col items-center gap-0.5">
-        <div className="w-1 h-1 md:w-0.5 md:h-0.5 rounded-full bg-amber-500 mb-0.5" />
-        <span className={`text-[9px] tracking-wider md:text-[7.5px] font-black uppercase md:tracking-widest leading-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-          {data.label || 'Note'}
-        </span>
-      </div>
-
-      <Handle type="source" position={sourcePosition || Position.Bottom} className="w-1 h-1 !bg-amber-500 border-none" />
+    <div
+      title={data.label}
+      className={`w-[108px] h-11 md:h-9 md:w-[140px] px-3 max-md:rounded-2xl flex items-center gap-1.5 rounded-full border transition-shadow ${
+        dark ? 'bg-[#111827] text-slate-200' : 'bg-white text-slate-700'
+      }`}
+      style={{ borderColor: selected ? color : `${color}59`, boxShadow: `0 3px 10px ${color}${selected ? '40' : '1F'}` }}
+    >
+      <Handle type="target" position={targetPosition || Position.Top} className="!w-1.5 !h-1.5 !min-w-0 !border-0 opacity-0" />
+      <FileText size={13} className="shrink-0" style={{ color }} />
+      <span className="min-w-0 max-md:line-clamp-2 max-md:leading-tight max-md:text-[11.5px] md:truncate text-[12px] font-semibold">{data.label || 'Note'}</span>
+      <Handle type="source" position={sourcePosition || Position.Bottom} className="!w-1.5 !h-1.5 !min-w-0 !border-0 opacity-0" />
     </div>
   )
 }

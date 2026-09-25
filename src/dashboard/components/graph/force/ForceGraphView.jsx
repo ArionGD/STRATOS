@@ -4,6 +4,7 @@ import { zoom as d3zoom, zoomIdentity } from 'd3-zoom'
 import { select } from 'd3-selection'
 import { Plus, Minus, Maximize } from 'lucide-react'
 import useIsMobile from '../../../../hooks/useIsMobile'
+import { ROOT_COLOR, LOOSE_NOTE_COLOR, CLUSTER_COLORS } from '../palette'
 
 /**
  * Stratos Force Graph
@@ -14,10 +15,6 @@ import useIsMobile from '../../../../hooks/useIsMobile'
  * - Drag a node and its neighbours follow on elastic links
  */
 
-const ROOT_COLOR = '#F59E0B'
-const LOOSE_NOTE_COLOR = '#FBBF24' // notes directly under the workspace: lighter amber
-// Vivid, eye-catching cluster colours (the workspace itself is amber)
-const CLUSTER_COLORS = ['#10B981', '#F43F5E', '#8B5CF6', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6', '#84CC16']
 
 const BASE_RADIUS = { workspace: 20, cluster: 13, note: 8 }
 // Equal-angle radial layout: distance from a parent to its children

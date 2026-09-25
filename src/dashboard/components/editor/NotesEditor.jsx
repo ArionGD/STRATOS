@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NoteService } from '../../../services/NoteService'
 import { 
@@ -8,9 +8,35 @@ import {
   Edit3, Maximize2, Minimize2
 } from 'lucide-react'
 
-const NotesEditor = ({ onClose, theme, activeNode, workspaceId, isExpanded, onToggleExpand }) => {
+const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, isExpanded, onToggleExpand }) => {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const titleRef = useRef(null)
+  const contentRef = useRef(null)
+
+  // Title and body grow with their text, so the panel is the only scroll area
+  // (a fixed-height textarea inside a scrolling panel made scrolling feel stuck)
+  const fitTextareas = () => {
+    for (const el of [titleRef.current, contentRef.current]) {
+      if (!el) continue
+      el.style.height = 'auto'
+      el.style.height = `${el.scrollHeight}px`
+    }
+  }
+  useLayoutEffect(fitTextareas, [title, content])
+
+  // Re-measure when the width changes (the panel slides open from zero width,
+  // which would otherwise leave the text box sized for one character per line)
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    let lastWidth = el.clientWidth
+    const ro = new ResizeObserver(() => {
+      if (el.clientWidth !== lastWidth) { lastWidth = el.clientWidth; fitTextareas() }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   const [status, setStatus] = useState('Draft')
   const [isSaving, setIsSaving] = useState(false)
   const [showSavedToast, setShowSavedToast] = useState(false)
@@ -119,12 +145,13 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, isExpanded, onTo
       </div>
 
       {/* Writing Area */}
-      <div className="flex-1 flex flex-col md:block overflow-y-auto p-5 space-y-4 md:p-8 md:space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-4 md:p-8 md:space-y-6">
         <textarea 
+          ref={titleRef}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Note Title..."
-          className="w-full bg-transparent text-2xl md:text-3xl font-black focus:outline-none placeholder:text-slate-700 leading-tight md:leading-tight resize-none"
+          className="w-full bg-transparent text-2xl md:text-3xl font-black focus:outline-none placeholder:text-slate-700 leading-tight md:leading-tight resize-none overflow-hidden"
           rows="1"
         />
         <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-2 md:gap-0 mb-2 md:mb-4">
@@ -132,7 +159,7 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, isExpanded, onTo
             <span className={`shrink-0 md:shrink px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${status === 'Published' ? 'bg-green-500/10 text-green-500' : 'bg-blue-600/10 text-blue-500'}`}>
               {status}
             </span>
-            <span className="truncate md:overflow-visible md:whitespace-normal text-[10px] text-slate-500 font-medium uppercase tracking-widest">Workspace: Arion Studios</span>
+            <span className="truncate md:overflow-visible md:whitespace-normal text-[10px] text-slate-500 font-medium uppercase tracking-widest">Workspace: {workspaceName || 'Untitled'}</span>
           </div>
           
           <AnimatePresence>
@@ -149,10 +176,11 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, isExpanded, onTo
           </AnimatePresence>
         </div>
         <textarea 
+          ref={contentRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Start typing your ideas..."
-          className="w-full flex-1 min-h-[240px] md:flex-initial md:min-h-0 h-full bg-transparent text-[16px] md:text-[15px] leading-relaxed focus:outline-none placeholder:text-slate-700 resize-none font-medium"
+          className="w-full min-h-[240px] md:min-h-[320px] bg-transparent text-[16px] md:text-[15px] leading-relaxed focus:outline-none placeholder:text-slate-700 resize-none overflow-hidden font-medium"
         />
       </div>
 
