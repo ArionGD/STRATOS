@@ -33,6 +33,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c319afda-dea2-48bc-af83-796fdad1dda5"
+      }
+    },
+    "owner": "orion-celestial"
   }
 }
