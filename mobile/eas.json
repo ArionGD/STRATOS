@@ -10,7 +10,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_STRATOS_URL": "https://stratos.onrender.com"
+        "EXPO_PUBLIC_STRATOS_URL": "https://stratos.altair-engine.com"
       }
     },
     "production": {
@@ -18,7 +18,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_STRATOS_URL": "https://stratos.onrender.com"
+        "EXPO_PUBLIC_STRATOS_URL": "https://stratos.altair-engine.com"
       }
     }
   }

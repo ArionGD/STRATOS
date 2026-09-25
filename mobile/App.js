@@ -14,7 +14,7 @@ import * as SplashScreen from 'expo-splash-screen';
 SplashScreen.preventAutoHideAsync();
 
 // Set per build profile in eas.json (EXPO_PUBLIC_* vars are inlined at build time)
-const WEB_URL = (process.env.EXPO_PUBLIC_STRATOS_URL || 'https://stratos.onrender.com').replace(/\/+$/, '');
+const WEB_URL = (process.env.EXPO_PUBLIC_STRATOS_URL || 'https://stratos.altair-engine.com').replace(/\/+$/, '');
 const ORIGIN = WEB_URL.match(/^https?:\/\/[^/]+/i)[0].toLowerCase();
 
 const COLORS = {
