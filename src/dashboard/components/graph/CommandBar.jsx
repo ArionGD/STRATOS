@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ChevronDown, Layers, FileText, GitGraph, Box, List, Layout, Orbit } from 'lucide-react'
+import { Plus, ChevronDown, Layers, FileText, GitGraph, Box, List, Layout, Orbit, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import useIsMobile from '../../../hooks/useIsMobile'
 
 const CommandBar = ({ 
@@ -23,6 +23,15 @@ const CommandBar = ({
   const [isAddingNode, setIsAddingNode] = useState(false)
   const [isParentDropdownOpen, setIsParentDropdownOpen] = useState(false)
   const isMobile = useIsMobile()
+
+  // Desktop: the view switcher can collapse to icons only (remembered)
+  const [compact, setCompact] = useState(() => {
+    try { return localStorage.getItem('stratos-viewbar-compact') === '1' } catch { return false }
+  })
+  useEffect(() => {
+    try { localStorage.setItem('stratos-viewbar-compact', compact ? '1' : '0') } catch { /* private mode */ }
+  }, [compact])
+  const showLabels = !isMobile && !compact
 
   return (
     <div className={`relative w-full md:w-auto flex items-center gap-1 p-1.5 rounded-2xl border shadow-2xl transition-all duration-500 overflow-visible ${
@@ -217,17 +226,43 @@ const CommandBar = ({
               onClick={() => setDisplayMode(mode.id)}
               aria-label={`${mode.label} view`}
               aria-pressed={displayMode === mode.id}
-              className={`w-10 h-10 max-md:w-auto max-md:flex-1 justify-center md:justify-start md:w-auto md:h-auto flex items-center gap-2 md:px-3 md:py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
+              title={compact ? mode.label : undefined}
+              className={`w-10 h-10 max-md:w-auto max-md:flex-1 justify-center md:justify-start md:w-auto md:h-auto flex items-center md:py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${compact ? 'md:px-2' : 'md:px-3'} ${
                 displayMode === mode.id 
                   ? 'bg-amber-500 text-white shadow-lg' 
                   : (theme === 'dark' ? 'text-slate-500 hover:text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:text-[#0F172A] hover:bg-white/50')
               }`}
             >
-              <mode.icon size={13} className="max-md:w-[17px] max-md:h-[17px]" />
-              <span className="hidden sm:inline">{mode.label}</span>
+              <mode.icon size={13} className="shrink-0 max-md:w-[17px] max-md:h-[17px]" />
+              <AnimatePresence initial={false}>
+                {showLabels && (
+                  <motion.span
+                    initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                    animate={{ width: 'auto', opacity: 1, marginLeft: 8 }}
+                    exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden whitespace-nowrap"
+                  >
+                    {mode.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
           ))}
         </div>
+
+        {/* Collapse / expand the view labels (desktop) */}
+        <button
+          onClick={() => setCompact(v => !v)}
+          aria-label={compact ? 'Show view names' : 'Show icons only'}
+          aria-pressed={compact}
+          title={compact ? 'Show view names' : 'Show icons only'}
+          className={`hidden md:flex ml-1 w-8 h-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+            theme === 'dark' ? 'text-slate-500 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-[#0F172A] hover:bg-slate-100'
+          }`}
+        >
+          {compact ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+        </button>
       </div>
 
       {/* Mobile: add-node form drops down as a full-width card under the bar */}
