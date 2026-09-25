@@ -153,8 +153,9 @@ app.get('/api/overview', requireAuth, route(async (req, res) => {
     [req.userId]
   )
   const notes = await db.query(
-    `SELECT n.id, n.title, n.content, n.parent_id, n.workspace_id FROM notes n
-     JOIN workspaces w ON w.id = n.workspace_id WHERE w.user_id = $1`,
+    `SELECT n.id, n.title, n.content, n.parent_id, n.workspace_id, n.updated_at FROM notes n
+     JOIN workspaces w ON w.id = n.workspace_id WHERE w.user_id = $1
+     ORDER BY n.updated_at DESC`,
     [req.userId]
   )
   const conversations = await db.query(

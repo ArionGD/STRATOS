@@ -213,37 +213,37 @@ const Stats = ({ theme }) => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex-1 overflow-y-auto no-scrollbar px-4 pt-5 pb-6 md:p-10 space-y-5 md:space-y-10 ${
+      className={`flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-5 md:p-10 space-y-3 md:space-y-10 ${
         isDark ? 'text-white' : 'text-slate-800'
       }`}
     >
-      <header className="space-y-2">
-        <h1 className="text-[28px] leading-[1.05] md:text-4xl font-black tracking-tighter uppercase">
+      <header className="space-y-0.5 md:space-y-2">
+        <h1 className="text-xl leading-tight md:text-4xl font-black tracking-tight md:tracking-tighter uppercase">
           Architectural <span className="text-blue-600">Analytics</span>
         </h1>
-        <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em]">
+        <p className="max-md:hidden text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em]">
           Measuring your cognitive ecosystem expansion
         </p>
       </header>
 
       {/* Core Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-6">
         {metrics.map((m, idx) => (
           <div 
             key={idx} 
-            className={`p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border transition-all min-w-0 ${
+            className={`p-3 md:p-8 rounded-2xl md:rounded-[2.5rem] border transition-all min-w-0 ${
               isDark 
                 ? 'border-white/5 bg-white/2 hover:border-blue-500/30' 
                 : 'border-slate-200 bg-white hover:border-blue-500/20 shadow-sm'
             }`}
           >
-            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-6 ${
+            <div className={`w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-2xl flex items-center justify-center mb-2 md:mb-6 ${
               isDark ? 'bg-white/5' : 'bg-slate-50 border border-slate-100'
             } ${m.color}`}>
-              <m.icon className="w-5 h-5 md:w-6 md:h-6" />
+              <m.icon className="w-4 h-4 md:w-6 md:h-6" />
             </div>
-            <div className="text-2xl md:text-3xl font-black mb-1 truncate">{m.value}</div>
-            <div className="flex flex-col items-start gap-1.5 md:flex-row md:items-center md:justify-between md:gap-0">
+            <div className="text-[22px] leading-7 md:text-3xl md:leading-9 font-black mb-0.5 md:mb-1 truncate">{m.value}</div>
+            <div className="flex flex-col items-start gap-1 md:flex-row md:items-center md:justify-between md:gap-0">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider md:tracking-widest">{m.label}</span>
               <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
                 ACTIVE
@@ -253,17 +253,17 @@ const Stats = ({ theme }) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6">
         {/* Workspace Density Chart */}
-        <div className={`lg:col-span-2 p-5 md:p-10 rounded-2xl md:rounded-[3rem] border relative overflow-hidden flex flex-col justify-between min-h-[340px] md:min-h-[400px] ${
+        <div className={`lg:col-span-2 p-4 md:p-10 rounded-2xl md:rounded-[3rem] border relative overflow-hidden flex flex-col justify-between min-h-[280px] md:min-h-[400px] ${
           isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
         }`}>
-          <div className="space-y-2">
+          <div className="space-y-1 md:space-y-2">
             <h2 className="text-base md:text-xl font-black uppercase tracking-widest">Workspace Density</h2>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Stacked node composition (Clusters vs. Notes) per active environment</p>
           </div>
           
-          <div className="relative flex-1 flex items-stretch mt-6 md:mt-8 min-h-[220px]">
+          <div className="relative flex-1 flex items-stretch mt-4 md:mt-8 min-h-[180px] md:min-h-[220px]">
             {/* Y-Axis Labels */}
             <div className="w-10 md:w-12 shrink-0 flex flex-col justify-between text-[8px] md:text-[9px] font-black text-slate-500 pr-1.5 md:pr-2 border-r border-slate-500/10 py-1">
               <span>{Math.max(...stats.workspaces.map(w => w.clustersCount + w.notesCount), 10)} Nodes</span>
@@ -364,7 +364,7 @@ const Stats = ({ theme }) => {
           </div>
 
           {/* Graph Legend */}
-          <div className="flex justify-center md:justify-end gap-6 text-[9px] font-black uppercase tracking-wider text-slate-500 mt-4 md:mt-6 pt-4 border-t border-slate-500/5">
+          <div className="flex justify-center md:justify-end gap-6 text-[9px] font-black uppercase tracking-wider text-slate-500 mt-3 md:mt-6 pt-3 md:pt-4 border-t border-slate-500/5">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded bg-gradient-to-b from-amber-400 to-amber-600" />
               <span>Clusters</span>
@@ -377,14 +377,14 @@ const Stats = ({ theme }) => {
         </div>
 
         {/* Top Sectors Card */}
-        <div className={`p-5 md:p-10 rounded-2xl md:rounded-[3rem] border flex flex-col justify-between ${
+        <div className={`p-4 md:p-10 rounded-2xl md:rounded-[3rem] border flex flex-col justify-between ${
           isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
         }`}>
-          <div className="space-y-2">
+          <div className="space-y-1 md:space-y-2">
             <h2 className="text-base md:text-xl font-black uppercase tracking-widest">Top Sectors</h2>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Most active knowledge clusters</p>
           </div>
-          <div className="space-y-5 md:space-y-6 my-5 md:my-6">
+          <div className="space-y-4 md:space-y-6 my-4 md:my-6">
             {stats.sectors.map((s, idx) => {
               const colors = ['bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
               return (
@@ -409,7 +409,7 @@ const Stats = ({ theme }) => {
               );
             })}
           </div>
-          <div className={`w-full py-4 text-center rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] border ${
+          <div className={`w-full py-3 md:py-4 text-center rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] border ${
             isDark 
               ? 'bg-white/5 border-white/10 text-slate-300' 
               : 'bg-slate-50 border-slate-200 text-slate-600'
@@ -420,10 +420,10 @@ const Stats = ({ theme }) => {
       </div>
 
       {/* Workspace Registry Detail Table */}
-      <div className={`p-5 md:p-10 rounded-2xl md:rounded-[3rem] border space-y-4 md:space-y-6 ${
+      <div className={`p-4 md:p-10 rounded-2xl md:rounded-[3rem] border space-y-3 md:space-y-6 ${
         isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
       }`}>
-        <div className="space-y-2">
+        <div className="space-y-1 md:space-y-2">
           <h2 className="text-base md:text-xl font-black uppercase tracking-widest">Workspace Registry</h2>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
             Relational density audit of active environments
@@ -431,14 +431,14 @@ const Stats = ({ theme }) => {
         </div>
 
         {/* Mobile: stacked registry cards */}
-        <div className="md:hidden space-y-3">
+        <div className="md:hidden space-y-2.5">
           {stats.workspaces.map((ws) => {
             const totalNodes = ws.clustersCount + ws.notesCount;
             const densityPercent = Math.min(100, Math.round((totalNodes / 15) * 100));
             return (
               <div
                 key={ws.id}
-                className={`p-4 rounded-2xl border ${
+                className={`p-3 rounded-2xl border ${
                   isDark ? 'border-white/5 bg-white/2' : 'border-slate-100 bg-slate-50/60'
                 }`}
               >

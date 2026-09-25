@@ -61,18 +61,18 @@ const NotificationsView = ({ theme, onClose }) => {
       className={`flex-1 flex flex-col overflow-hidden ${theme === 'dark' ? 'bg-[#0F172A]/40 backdrop-blur-3xl text-white' : 'bg-white text-slate-900'}`}
     >
       {/* Header Area */}
-      <header className={`p-4 md:p-8 border-b transition-colors ${theme === 'dark' ? 'border-white/5 bg-white/2' : 'border-slate-100 bg-slate-50/50'}`}>
+      <header className={`px-4 pt-1.5 pb-0 md:p-8 border-b transition-colors ${theme === 'dark' ? 'border-white/5 bg-white/2' : 'border-slate-100 bg-slate-50/50'}`}>
         <div className="max-w-4xl mx-auto w-full">
           <button 
             onClick={onClose}
-            className="flex items-center gap-2 max-md:min-h-[40px] mb-3 md:mb-8 text-slate-500 hover:text-white transition-colors group"
+            className="flex items-center gap-2 max-md:min-h-[40px] mb-0 md:mb-8 text-slate-500 hover:text-white transition-colors group"
           >
             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-xs font-black uppercase tracking-widest">Back to workspace</span>
+            <span className="text-[11px] md:text-xs md:leading-4 font-black uppercase tracking-widest">Back to workspace</span>
           </button>
           
-          <div className="flex items-center justify-between max-md:gap-3 mb-4 md:mb-8">
-            <h1 className="text-[28px] leading-tight md:text-4xl font-black tracking-tight">Notifications</h1>
+          <div className="flex items-center justify-between max-md:gap-3 mb-1 md:mb-8">
+            <h1 className="text-xl leading-tight md:text-4xl font-black tracking-tight">Notifications</h1>
             <button className="max-md:min-h-[40px] max-md:shrink-0 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
               Mark all as read
             </button>
@@ -83,7 +83,7 @@ const NotificationsView = ({ theme, onClose }) => {
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`text-[12px] md:text-[13px] max-md:pt-3 font-black uppercase tracking-widest pb-2 border-b-2 transition-all ${
+                className={`text-[12px] md:text-[13px] max-md:pt-3 font-black uppercase tracking-widest pb-2.5 md:pb-2 border-b-2 transition-all ${
                   activeTab === tab 
                     ? `border-amber-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900 md:text-white'}` 
                     : 'border-transparent text-slate-500 hover:text-slate-300'
@@ -97,20 +97,20 @@ const NotificationsView = ({ theme, onClose }) => {
       </header>
 
       {/* Notifications List */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-4xl mx-auto space-y-3 md:space-y-4">
+      <main className="flex-1 overflow-y-auto p-4 pt-3 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-2.5 md:space-y-4">
           {notifications.map(notif => (
             <motion.div 
               key={notif.id}
               whileHover={{ x: 4 }}
-              className={`p-4 md:p-6 rounded-2xl border transition-all duration-300 group cursor-pointer ${
+              className={`p-3.5 md:p-6 rounded-2xl border transition-all duration-300 group cursor-pointer ${
                 theme === 'dark' 
                   ? (notif.unread ? 'bg-white/5 border-white/10' : 'bg-transparent border-white/5') 
                   : (notif.unread ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100')
               }`}
             >
               <div className="flex gap-3 md:gap-5">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                <div className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 ${
                   theme === 'dark' ? 'bg-white/5' : 'bg-slate-100'
                 }`}>
                   {notif.icon}
@@ -143,7 +143,7 @@ const NotificationsView = ({ theme, onClose }) => {
             </motion.div>
           ))}
           
-          <div className="py-12 flex flex-col items-center justify-center text-center opacity-30">
+          <div className="py-8 md:py-12 flex flex-col items-center justify-center text-center opacity-30">
             <Bell size={32} className="mb-4" />
             <p className="text-[13px] font-bold uppercase tracking-widest">End of stream</p>
           </div>

@@ -119,16 +119,16 @@ const Plan = ({ theme }) => {
         isDark ? 'text-white' : 'text-slate-800'
       }`}
     >
-      <header className={`border-b flex flex-col items-start gap-3 px-4 pt-5 pb-4 md:h-24 md:flex-row md:items-center md:justify-between md:px-10 md:py-0 md:gap-0 shrink-0 ${
+      <header className={`border-b flex flex-col items-stretch gap-1 px-4 pt-3 pb-1 md:h-24 md:flex-row md:items-center md:justify-between md:px-10 md:py-0 md:gap-0 shrink-0 ${
         isDark ? 'border-white/5' : 'border-slate-200 bg-white'
       }`}>
         <div className="flex items-center gap-3 md:gap-4 min-w-0">
-          <div className="w-11 h-11 md:w-12 md:h-12 shrink-0 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/10">
-            <CalendarIcon size={24} />
+          <div className="w-8 h-8 md:w-12 md:h-12 shrink-0 rounded-lg md:rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/10">
+            <CalendarIcon className="w-4 h-4 md:w-6 md:h-6" />
           </div>
-          <div>
-            <h1 className="text-[26px] leading-[1.05] md:text-2xl font-black uppercase tracking-tighter">Architectural <span className="text-amber-500">Timeline</span></h1>
-            <p className="mt-1 md:mt-0 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Synchronize your cognitive roadmap</p>
+          <div className="min-w-0">
+            <h1 className="text-xl leading-tight md:text-2xl font-black uppercase tracking-tight md:tracking-tighter">Architectural <span className="text-amber-500">Timeline</span></h1>
+            <p className="max-md:hidden mt-1 md:mt-0 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Synchronize your cognitive roadmap</p>
           </div>
         </div>
 
@@ -141,7 +141,7 @@ const Plan = ({ theme }) => {
         </div>
       </header>
 
-      <div className="md:flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 p-4 md:p-10 md:overflow-hidden shrink-0 md:shrink">
+      <div className="md:flex-1 grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-6 p-4 pt-3 md:p-10 md:overflow-hidden shrink-0 md:shrink">
         {/* Calendar Grid */}
         <div className={`lg:col-span-3 rounded-2xl md:rounded-[3rem] border p-3 md:p-8 overflow-hidden flex flex-col justify-between ${
           isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
@@ -174,7 +174,7 @@ const Plan = ({ theme }) => {
               return (
                 <div 
                   key={i} 
-                  className={`p-1.5 md:p-4 rounded-xl md:rounded-2xl border transition-all relative group cursor-pointer flex flex-col items-center md:items-stretch justify-between min-h-[48px] md:min-h-[90px] min-w-0 ${
+                  className={`p-1.5 md:p-4 rounded-xl md:rounded-2xl border transition-all relative group cursor-pointer flex flex-col items-center md:items-stretch justify-between min-h-[42px] md:min-h-[90px] min-w-0 ${
                     isToday 
                       ? 'border-amber-500 bg-amber-500/5 shadow-inner' 
                       : hasWork
@@ -243,14 +243,14 @@ const Plan = ({ theme }) => {
         </div>
 
         {/* Sidebar Schedule */}
-        <div className="space-y-4 md:space-y-6 md:overflow-y-auto no-scrollbar">
-          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border space-y-5 md:space-y-6 ${
+        <div className="space-y-3 md:space-y-6 md:overflow-y-auto no-scrollbar">
+          <div className={`p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border space-y-4 md:space-y-6 ${
             isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
           }`}>
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
               <Star size={14} className="text-amber-500 animate-pulse" /> Active Goals
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {[
                 { title: 'Neural Map V2', progress: 75 },
                 { title: 'System Hardening', progress: 40 },
@@ -269,18 +269,18 @@ const Plan = ({ theme }) => {
             </div>
           </div>
 
-          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border space-y-5 md:space-y-6 ${
+          <div className={`p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border space-y-4 md:space-y-6 ${
             isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
           }`}>
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
               <Bell size={14} className="text-amber-500 animate-bounce" /> Synchronization
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {events.length === 0 ? (
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center py-4">No recent activity logged</div>
               ) : (
                 events.map((e, idx) => (
-                  <div key={idx} className={`flex items-center md:items-stretch gap-4 p-3.5 md:p-4 rounded-xl border transition-colors ${
+                  <div key={idx} className={`flex items-center md:items-stretch gap-3 md:gap-4 p-3 md:p-4 rounded-xl border transition-colors ${
                     isDark ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                   }`}>
                     <div className="text-center shrink-0">

@@ -41,3 +41,28 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #D1D5DB;
 }
+
+/* ---------------------------------------------------------------------------
+   Android app mode (html.app-mode, set in src/app-flow/appMode.js):
+   drop the browser habits that make a WebView feel like a website
+   ------------------------------------------------------------------------- */
+html.app-mode,
+html.app-mode body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html.app-mode input,
+html.app-mode textarea,
+html.app-mode [contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+html.app-mode img,
+html.app-mode a {
+  -webkit-user-drag: none;
+}

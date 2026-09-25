@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
+  Home,
   LayoutGrid,
   BarChart2,
   FileText,
@@ -27,6 +28,7 @@ import {
 // Desktop keeps the original rail + header in Dashboard.jsx.
 
 export const VIEW_TITLES = {
+  home: 'Home',
   graph: 'Spaces',
   stats: 'Stats',
   notes: 'Notes',
@@ -46,13 +48,14 @@ export const VIEW_TITLES = {
 }
 
 const TABS = [
+  { view: 'home', label: 'Home', icon: Home },
   { view: 'graph', label: 'Spaces', icon: LayoutGrid },
-  { view: 'stats', label: 'Stats', icon: BarChart2 },
   { view: 'notes', label: 'Notes', icon: FileText },
   { view: 'plan', label: 'Plan', icon: Calendar }
 ]
 
 const MORE_ITEMS = [
+  { view: 'stats', label: 'Stats', icon: BarChart2 },
   { view: 'vault', label: 'Vault', icon: Wallet },
   { view: 'system', label: 'System', icon: Settings },
   { view: 'notifications', label: 'Alerts', icon: Bell },

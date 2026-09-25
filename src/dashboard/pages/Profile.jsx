@@ -62,22 +62,22 @@ const Profile = ({ theme, onClose }) => {
       </div>
 
       {/* Header */}
-      <header className="h-auto md:h-20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 px-4 md:px-10 pt-4 pb-4 md:py-0 shrink-0">
+      <header className="h-auto md:h-20 flex flex-row items-center justify-between gap-3 md:gap-0 px-4 md:px-10 pt-3 pb-3 md:py-0 shrink-0">
         <div className="flex items-center gap-3 md:gap-4 max-md:min-w-0">
-          <div className={`w-10 h-10 max-md:shrink-0 rounded-xl flex items-center justify-center transition-colors ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-slate-100 border border-slate-200'}`}>
+          <div className={`max-md:hidden w-10 h-10 max-md:shrink-0 rounded-xl flex items-center justify-center transition-colors ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-slate-100 border border-slate-200'}`}>
             <User size={20} className="text-amber-500" />
           </div>
           <div className="max-md:min-w-0">
-            <h1 className={`text-[26px] max-md:leading-tight md:text-xl font-black uppercase tracking-tight md:tracking-widest ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            <h1 className={`text-xl max-md:leading-tight max-md:truncate md:text-xl font-black uppercase tracking-tight md:tracking-widest ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               Identity Center
             </h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Manage your architectural profile</p>
+            <p className="max-md:hidden text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Manage your architectural profile</p>
           </div>
         </div>
         
         <button 
           onClick={onClose}
-          className={`order-first md:order-none max-md:min-h-[40px] px-4 py-2 rounded-xl md:rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
+          className={`max-md:shrink-0 md:order-none max-md:min-h-[40px] px-3 md:px-4 py-2 rounded-xl md:rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
             theme === 'dark' 
               ? 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10' 
               : 'bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200'
@@ -88,7 +88,7 @@ const Profile = ({ theme, onClose }) => {
         </button>
       </header>
 
-      <div className="flex-none md:flex-1 flex flex-col md:flex-row px-4 md:px-10 pb-6 md:pb-10 gap-4 md:gap-10 overflow-visible md:overflow-hidden">
+      <div className="flex-none md:flex-1 flex flex-col md:flex-row px-4 md:px-10 pb-5 md:pb-10 gap-3 md:gap-10 overflow-visible md:overflow-hidden">
         {/* Sidebar Tabs */}
         <aside className="contents md:flex md:w-64 md:flex-col md:gap-2 md:shrink-0">
           <div className="grid grid-cols-4 gap-1.5 md:contents">
@@ -96,7 +96,7 @@ const Profile = ({ theme, onClose }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`max-md:min-w-0 max-md:min-h-[60px] flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 px-1 md:px-5 py-2 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 group ${
+              className={`max-md:min-w-0 max-md:min-h-[52px] flex flex-col md:flex-row items-center justify-center md:justify-start gap-0.5 md:gap-3 px-1 md:px-5 py-1.5 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 group ${
                 activeTab === tab.id
                   ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'bg-blue-600 text-white shadow-lg shadow-blue-200')
                   : (theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50')
@@ -114,7 +114,7 @@ const Profile = ({ theme, onClose }) => {
           </div>
 
           <div className="order-last md:order-none mt-0 md:mt-auto space-y-2 md:space-y-4">
-            <div className={`p-5 rounded-2xl border transition-all ${
+            <div className={`p-4 md:p-5 rounded-2xl border transition-all ${
               theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'
             }`}>
               <div className="flex items-center gap-2 mb-2">
@@ -133,7 +133,7 @@ const Profile = ({ theme, onClose }) => {
 
             <button 
               onClick={() => { logout(); window.location.href = '/login'; }}
-              className="w-full max-md:min-h-[48px] flex items-center justify-center md:justify-start gap-3 px-5 py-4 rounded-2xl text-red-500 hover:bg-red-500/10 transition-all font-bold text-sm"
+              className="w-full max-md:min-h-[44px] flex items-center justify-center md:justify-start gap-3 px-5 py-3 md:py-4 rounded-2xl text-red-500 hover:bg-red-500/10 transition-all font-bold text-sm"
             >
               <LogOut size={18} />
               Log Out System
@@ -151,16 +151,16 @@ const Profile = ({ theme, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                className="space-y-4 md:space-y-8"
+                className="space-y-3 md:space-y-8"
               >
                 {/* Profile Header Card */}
-                <section className={`p-5 md:p-8 rounded-2xl md:rounded-[2rem] border relative overflow-hidden flex flex-col md:block ${
+                <section className={`p-4 md:p-8 rounded-2xl md:rounded-[2rem] border relative overflow-hidden flex flex-col md:block ${
                   theme === 'dark' ? 'bg-[#1E293B]/40 backdrop-blur-2xl border-white/5' : 'bg-white border-slate-200'
                 }`}>
-                  <div className="static md:absolute top-0 right-0 p-0 md:p-8 order-last md:order-none mt-5 md:mt-0">
+                  <div className="static md:absolute top-0 right-0 p-0 md:p-8 order-last md:order-none mt-4 md:mt-0">
                     <button 
                       onClick={() => setIsEditing(!isEditing)}
-                      className={`w-full md:w-auto max-md:min-h-[44px] px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                      className={`w-full md:w-auto max-md:min-h-[40px] px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
                         isEditing 
                           ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' 
                           : (theme === 'dark' ? 'bg-white/5 text-white border border-white/10 hover:bg-white/10' : 'bg-slate-100 text-slate-900 border border-slate-200 hover:bg-slate-200')
@@ -170,21 +170,21 @@ const Profile = ({ theme, onClose }) => {
                     </button>
                   </div>
 
-                  <div className="flex flex-col md:flex-row items-center gap-5 md:gap-10 text-center md:text-left">
+                  <div className="flex flex-col md:flex-row items-center gap-3 md:gap-10 text-center md:text-left">
                     <div className="relative group max-md:shrink-0">
-                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-amber-500 p-1 shadow-2xl">
-                        <div className={`w-full h-full rounded-[1.75rem] md:rounded-[2.2rem] flex items-center justify-center text-3xl md:text-4xl font-black text-white ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-slate-50 text-slate-900 max-md:text-slate-900'}`}>
+                      <div className="w-20 h-20 md:w-32 md:h-32 rounded-[1.6rem] md:rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-amber-500 p-1 shadow-2xl">
+                        <div className={`w-full h-full rounded-[1.4rem] md:rounded-[2.2rem] flex items-center justify-center text-2xl md:text-4xl font-black text-white ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-slate-50 text-slate-900 max-md:text-slate-900'}`}>
                           {user?.first_name?.[0]}{user?.last_name?.[0]}
                         </div>
                       </div>
-                      <button className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 rounded-2xl border-4 border-[#0F172A] flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform">
+                      <button className="absolute max-md:-bottom-1 max-md:-right-1 bottom-0 right-0 w-9 h-9 md:w-10 md:h-10 bg-blue-600 rounded-2xl border-4 border-[#0F172A] flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform">
                         <Camera size={18} />
                       </button>
                     </div>
 
-                    <div className="space-y-2 max-md:min-w-0 w-full md:w-auto">
+                    <div className="space-y-1.5 md:space-y-2 max-md:min-w-0 w-full md:w-auto">
                       <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3">
-                        <h2 className={`text-[26px] max-md:leading-tight md:text-4xl font-black tracking-tighter max-md:break-words ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                        <h2 className={`text-[22px] max-md:leading-tight md:text-4xl font-black tracking-tighter max-md:break-words ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                           {user?.first_name} {user?.last_name}
                         </h2>
                         <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center gap-1.5">
@@ -196,19 +196,19 @@ const Profile = ({ theme, onClose }) => {
                         <Mail size={16} className="max-md:shrink-0" />
                         {user?.email}
                       </p>
-                      <div className="flex items-center justify-center md:justify-start gap-6 mt-4 md:mt-6">
+                      <div className="flex items-center justify-center md:justify-start gap-6 mt-3 md:mt-6">
                         <div className="text-center">
-                          <div className={`text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>124</div>
+                          <div className={`text-xl md:text-2xl md:leading-8 font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>124</div>
                           <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Nodes</div>
                         </div>
                         <div className="w-px h-8 bg-slate-500/20"></div>
                         <div className="text-center">
-                          <div className={`text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>12</div>
+                          <div className={`text-xl md:text-2xl md:leading-8 font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>12</div>
                           <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Spaces</div>
                         </div>
                         <div className="w-px h-8 bg-slate-500/20"></div>
                         <div className="text-center">
-                          <div className={`text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>0.8s</div>
+                          <div className={`text-xl md:text-2xl md:leading-8 font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>0.8s</div>
                           <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Avg Sync</div>
                         </div>
                       </div>
@@ -217,12 +217,12 @@ const Profile = ({ theme, onClose }) => {
                 </section>
 
                 {/* Account Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  <section className={`p-5 md:p-8 rounded-2xl md:rounded-[2rem] border ${
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+                  <section className={`p-4 md:p-8 rounded-2xl md:rounded-[2rem] border ${
                     theme === 'dark' ? 'bg-[#1E293B]/20 border-white/5' : 'bg-white border-slate-200'
                   }`}>
-                    <h3 className={`text-[15px] md:text-sm font-black uppercase tracking-widest mb-4 md:mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-900'}`}>Identity Details</h3>
-                    <div className="space-y-6">
+                    <h3 className={`text-[15px] md:text-sm font-black uppercase tracking-widest mb-3 md:mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-900'}`}>Identity Details</h3>
+                    <div className="space-y-4 md:space-y-6">
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Full Name</label>
                         <input 
@@ -252,10 +252,10 @@ const Profile = ({ theme, onClose }) => {
                     </div>
                   </section>
 
-                  <section className={`p-5 md:p-8 rounded-2xl md:rounded-[2rem] border ${
+                  <section className={`p-4 md:p-8 rounded-2xl md:rounded-[2rem] border ${
                     theme === 'dark' ? 'bg-[#1E293B]/20 border-white/5' : 'bg-white border-slate-200'
                   }`}>
-                    <h3 className={`text-[15px] md:text-sm font-black uppercase tracking-widest mb-4 md:mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-900'}`}>System Integrity</h3>
+                    <h3 className={`text-[15px] md:text-sm font-black uppercase tracking-widest mb-3 md:mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-900'}`}>System Integrity</h3>
                     <div className="space-y-4">
                       {[
                         { label: 'Cloud Synchronization', status: 'Optimal' },
@@ -286,22 +286,22 @@ const Profile = ({ theme, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                className="max-w-2xl mx-auto py-8 md:py-20 text-center space-y-4 md:space-y-6"
+                className="max-w-2xl mx-auto py-5 md:py-20 text-center space-y-3 md:space-y-6"
               >
-                <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-600/20 rounded-3xl flex items-center justify-center mx-auto text-blue-500 mb-6 md:mb-8">
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-600/20 rounded-3xl flex items-center justify-center mx-auto text-blue-500 mb-4 md:mb-8">
                   <Shield size={40} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black tracking-tight">Security Protocols</h2>
+                <h2 className="text-xl md:text-3xl md:leading-9 font-black tracking-tight">Security Protocols</h2>
                 <p className="max-md:text-sm text-slate-500 font-medium">Manage your biometric, password, and session-based security layers here.</p>
-                <div className="grid gap-3 md:gap-4 mt-8 md:mt-12">
-                   <button className={`p-4 md:p-6 gap-3 md:gap-0 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all text-left flex items-center justify-between group ${theme === 'dark' ? '' : 'max-md:bg-white max-md:border-slate-200 max-md:shadow-sm'}`}>
+                <div className="grid gap-2.5 md:gap-4 mt-5 md:mt-12">
+                   <button className={`p-3.5 md:p-6 gap-3 md:gap-0 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all text-left flex items-center justify-between group ${theme === 'dark' ? '' : 'max-md:bg-white max-md:border-slate-200 max-md:shadow-sm'}`}>
                       <div>
                         <div className="text-sm font-black uppercase tracking-widest mb-1">Change Access Code</div>
                         <div className="text-[11px] text-slate-500">Update your primary system password</div>
                       </div>
                       <ChevronRight size={20} className={`max-md:shrink-0 text-slate-700 group-hover:text-white transition-all ${theme === 'dark' ? '' : 'max-md:group-hover:text-slate-900'}`} />
                    </button>
-                   <button className={`p-4 md:p-6 gap-3 md:gap-0 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all text-left flex items-center justify-between group ${theme === 'dark' ? '' : 'max-md:bg-white max-md:border-slate-200 max-md:shadow-sm'}`}>
+                   <button className={`p-3.5 md:p-6 gap-3 md:gap-0 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all text-left flex items-center justify-between group ${theme === 'dark' ? '' : 'max-md:bg-white max-md:border-slate-200 max-md:shadow-sm'}`}>
                       <div>
                         <div className="text-sm font-black uppercase tracking-widest mb-1">Session Management</div>
                         <div className="text-[11px] text-slate-500">You have 2 active architectural sessions</div>

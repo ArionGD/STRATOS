@@ -20,6 +20,7 @@ import { AI_ENABLED } from '../features'
 import useIsMobile from '../hooks/useIsMobile'
 import { setBackHandler, postToNative } from '../services/NativeBridge'
 import { MobileHeader, MobileTabBar, MobileMoreSheet } from './components/mobile/MobileNav'
+import MobileHome from './components/mobile/MobileHome'
 import Stats from './modules/Stats'
 import Notes from './modules/Notes'
 import Plan from './modules/Plan'
@@ -50,8 +51,13 @@ import useUserStore from '../store/useUserStore'
 function Dashboard() {
   const navigate = useNavigate()
   const { user, logout } = useUserStore()
-  const [activeView, setActiveView] = useState('graph')
-  const [theme, setTheme] = useState('light')
+  // Phones open on the compact Home screen; desktop keeps the graph
+  const [activeView, setActiveView] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'home' : 'graph'
+  )
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('stratos-theme') === 'dark' ? 'dark' : 'light' } catch { return 'light' }
+  })
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isEditorExpanded, setIsEditorExpanded] = useState(false)
@@ -76,6 +82,20 @@ function Dashboard() {
     setIsEditorExpanded(false)
     setIsAiOpen(false)
     setIsMoreOpen(false)
+  }
+
+  // Home screen shortcuts
+  const openWorkspace = (ws) => {
+    setActiveWorkspace(ws)
+    goToView('graph')
+  }
+
+  const openNoteFromHome = (note, ws) => {
+    if (ws) setActiveWorkspace(ws)
+    setActiveNode({ id: note.id, type: 'note', parentId: note.parent_id, data: { label: note.title, type: 'note' } })
+    setActiveView('graph')
+    setIsAiOpen(false)
+    setIsEditorOpen(true)
   }
 
   const toggleWorkspace = (id) => {
@@ -106,7 +126,7 @@ function Dashboard() {
 
   // Android back button (Expo shell): close the top-most layer first
   const backStateRef = useRef({})
-  backStateRef.current = { isMoreOpen, isCreateModalOpen, isSidebarOpen, isEditorOpen, isAiOpen, activeView }
+  backStateRef.current = { isMoreOpen, isCreateModalOpen, isSidebarOpen, isEditorOpen, isAiOpen, activeView, isMobile }
   useEffect(() => setBackHandler(() => {
     const st = backStateRef.current
     if (st.isMoreOpen) { setIsMoreOpen(false); return true }
@@ -114,12 +134,16 @@ function Dashboard() {
     if (st.isSidebarOpen) { setIsSidebarOpen(false); return true }
     if (st.isEditorOpen) { setIsEditorOpen(false); setIsEditorExpanded(false); return true }
     if (st.isAiOpen) { setIsAiOpen(false); return true }
-    if (st.activeView !== 'graph') { setActiveView('graph'); return true }
+    const rootView = st.isMobile ? 'home' : 'graph'
+    if (st.activeView !== rootView) { setActiveView(rootView); return true }
     return false
   }), [])
 
-  // Let the shell match the Android status bar to the theme
-  useEffect(() => { postToNative({ type: 'theme', value: theme }) }, [theme])
+  // Remember the theme, and let the Android shell match its status bar to it
+  useEffect(() => {
+    try { localStorage.setItem('stratos-theme', theme) } catch { /* private mode */ }
+    postToNative({ type: 'theme', value: theme })
+  }, [theme])
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -687,6 +711,16 @@ function Dashboard() {
                 ) : null}
               </AnimatePresence>
             </>
+          ) : activeView === 'home' ? (
+            <MobileHome
+              theme={theme}
+              user={user}
+              workspaces={workspaces}
+              onOpenWorkspace={openWorkspace}
+              onOpenNote={openNoteFromHome}
+              onCreateWorkspace={() => setIsCreateModalOpen(true)}
+              onGoTo={goToView}
+            />
           ) : activeView === 'settings' ? (
             <SettingsView theme={theme} onClose={() => setActiveView('graph')} />
           ) : activeView === 'notifications' ? (

@@ -14,59 +14,59 @@ const Vault = ({ theme }) => {
       animate={{ opacity: 1, y: 0 }}
       className="flex-1 max-md:min-w-0 flex flex-col h-full overflow-y-auto md:overflow-hidden no-scrollbar"
     >
-      <header className={`h-auto md:h-24 border-b border-white/5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-0 px-4 py-5 md:py-0 md:px-10 shrink-0 ${line}`}>
+      <header className={`h-auto md:h-24 border-b border-white/5 flex flex-row items-center justify-between gap-3 md:gap-0 px-4 py-2.5 md:py-0 md:px-10 shrink-0 ${line}`}>
         <div className="flex items-center gap-3 md:gap-4 max-md:min-w-0">
-          <div className="w-11 h-11 md:w-12 md:h-12 max-md:shrink-0 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-500">
-            <Wallet size={24} />
+          <div className="w-8 h-8 md:w-12 md:h-12 max-md:shrink-0 rounded-lg md:rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-500">
+            <Wallet className="w-4 h-4 md:w-6 md:h-6" />
           </div>
           <div className="max-md:min-w-0">
-            <h1 className="text-[26px] max-md:leading-tight md:text-2xl font-black uppercase tracking-tighter">Secure <span className="text-indigo-500">Vault</span></h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">End-to-end encrypted architectural storage</p>
+            <h1 className="text-xl max-md:leading-tight max-md:truncate md:text-2xl font-black uppercase tracking-tight md:tracking-tighter">Secure <span className="text-indigo-500">Vault</span></h1>
+            <p className="max-md:hidden text-[10px] text-slate-500 font-bold uppercase tracking-widest">End-to-end encrypted architectural storage</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between md:justify-start gap-3 md:gap-4">
-          <div className="px-3 md:px-4 py-2 max-md:min-h-[40px] bg-green-500/10 border border-green-500/20 rounded-full flex items-center gap-2">
+        <div className="flex items-center justify-between md:justify-start gap-3 md:gap-4 max-md:shrink-0">
+          <div className="max-md:hidden px-3 md:px-4 py-2 max-md:min-h-[40px] bg-green-500/10 border border-green-500/20 rounded-full flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-[10px] font-black text-green-500 uppercase max-md:whitespace-nowrap tracking-wider md:tracking-widest">Quantum Shield Active</span>
           </div>
-          <button className="px-5 md:px-6 py-2.5 max-md:min-h-[40px] max-md:text-sm max-md:text-white max-md:shrink-0 bg-indigo-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">
-            <Lock size={18} /> Lock All
+          <button className="px-4 md:px-6 py-2 md:py-2.5 max-md:min-h-[40px] max-md:text-sm max-md:text-white max-md:shrink-0 bg-indigo-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">
+            <Lock className="w-4 h-4 md:w-[18px] md:h-[18px]" /> Lock All
           </button>
         </div>
       </header>
 
-      <div className="flex-none md:flex-1 flex flex-col md:grid md:grid-cols-12 gap-4 md:gap-6 p-4 md:p-10 overflow-visible md:overflow-hidden">
+      <div className="flex-none md:flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-6 p-4 pt-3 md:p-10 overflow-visible md:overflow-hidden">
         {/* Security Overview */}
-        <div className="md:col-span-4 space-y-4 md:space-y-6">
-          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl text-center space-y-5 md:space-y-6 py-8 md:py-12 ${card}`}>
-            <div className="w-20 h-20 md:w-24 md:h-24 bg-indigo-500/10 rounded-[1.75rem] md:rounded-[2rem] flex items-center justify-center mx-auto text-indigo-500 relative">
-              <Shield size={48} />
-              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-indigo-600 rounded-xl border-4 border-[#0F172A] flex items-center justify-center text-white">
-                <Fingerprint size={20} />
+        <div className="md:col-span-4 space-y-3 md:space-y-6">
+          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl text-center space-y-4 md:space-y-6 py-5 md:py-12 ${card}`}>
+            <div className="w-16 h-16 md:w-24 md:h-24 bg-indigo-500/10 rounded-[1.4rem] md:rounded-[2rem] flex items-center justify-center mx-auto text-indigo-500 relative">
+              <Shield className="w-10 h-10 md:w-12 md:h-12" />
+              <div className="absolute -bottom-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-xl border-4 border-[#0F172A] flex items-center justify-center text-white">
+                <Fingerprint className="w-4 h-4 md:w-5 md:h-5" />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1 md:space-y-2">
               <h2 className="text-lg md:text-2xl font-black tracking-tight">System Integrity</h2>
               <p className="text-[13px] md:text-xs text-slate-500 font-medium px-2 md:px-10">Your architectural nodes are protected with AES-256-GCM encryption.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:gap-4 px-0 md:px-4 pt-2 md:pt-4">
-              <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
+            <div className="grid grid-cols-2 gap-2.5 md:gap-4 px-0 md:px-4 pt-0 md:pt-4">
+              <div className={`p-3 md:p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
                 <div className="text-lg font-black">2.4k</div>
                 <div className="text-[10px] md:text-[8px] font-black text-slate-500 uppercase">Encrypted Nodes</div>
               </div>
-              <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
+              <div className={`p-3 md:p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
                 <div className="text-lg font-black">Zero</div>
                 <div className="text-[10px] md:text-[8px] font-black text-slate-500 uppercase">Breach Attempts</div>
               </div>
             </div>
           </div>
 
-          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-white/5 bg-white/2 backdrop-blur-xl space-y-4 md:space-y-6 ${card}`}>
+          <div className={`p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-white/5 bg-white/2 backdrop-blur-xl space-y-3 md:space-y-6 ${card}`}>
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
               <Key size={16} /> Access Protocols
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-2 md:space-y-4">
               {[
                 { label: 'Master Key Rotation', status: 'Enabled' },
                 { label: 'Biometric Access', status: 'Active' },
@@ -83,7 +83,7 @@ const Vault = ({ theme }) => {
 
         {/* Vault Files */}
         <div className={`md:col-span-8 rounded-2xl md:rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl p-4 md:p-8 overflow-hidden flex flex-col ${card}`}>
-          <div className="flex items-center justify-between gap-2 mb-4 md:mb-8">
+          <div className="flex items-center justify-between gap-2 mb-3 md:mb-8">
             <h2 className="text-base md:text-xl font-black uppercase tracking-wider md:tracking-widest max-md:min-w-0">Confidential Assets</h2>
             <div className="flex gap-1 md:gap-2 max-md:shrink-0">
               <button className="p-2.5 md:p-2 hover:bg-white/5 rounded-lg text-slate-500 transition-all"><Eye size={20} /></button>
@@ -111,7 +111,7 @@ const Vault = ({ theme }) => {
               </div>
             ))}
             {/* Empty State Mock */}
-            <div className={`mt-6 md:mt-10 p-6 md:p-10 rounded-2xl md:rounded-[2.5rem] border border-dashed border-white/10 text-center space-y-2 ${lt ? 'max-md:border-slate-300' : ''}`}>
+            <div className={`mt-4 md:mt-10 p-5 md:p-10 rounded-2xl md:rounded-[2.5rem] border border-dashed border-white/10 text-center space-y-2 ${lt ? 'max-md:border-slate-300' : ''}`}>
               <div className="text-sm font-bold text-slate-600">Drop files here to encrypt and store them in the vault.</div>
               <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Supports all binary formats</div>
             </div>

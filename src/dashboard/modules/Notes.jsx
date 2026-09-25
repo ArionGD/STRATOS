@@ -100,33 +100,33 @@ const Notes = ({ theme }) => {
         isDark ? 'text-white' : 'text-slate-800'
       }`}
     >
-      <header className={`border-b flex flex-col items-stretch gap-4 px-4 pt-5 pb-4 md:h-24 md:flex-row md:items-center md:justify-between md:px-10 md:py-0 shrink-0 ${
+      <header className={`border-b flex flex-col items-stretch gap-3 md:gap-4 px-4 pt-3 pb-3 md:h-24 md:flex-row md:items-center md:justify-between md:px-10 md:py-0 shrink-0 ${
         isDark ? 'border-white/5' : 'border-slate-200 bg-white'
       }`}>
         <div className="flex items-center gap-3 md:gap-4 min-w-0">
-          <div className="w-11 h-11 md:w-12 md:h-12 shrink-0 rounded-2xl bg-blue-600/20 flex items-center justify-center text-blue-500 shadow-lg shadow-blue-500/10">
-            <FileText size={24} />
+          <div className="w-9 h-9 md:w-12 md:h-12 shrink-0 rounded-xl md:rounded-2xl bg-blue-600/20 flex items-center justify-center text-blue-500 shadow-lg shadow-blue-500/10">
+            <FileText className="w-[18px] h-[18px] md:w-6 md:h-6" />
           </div>
-          <div>
-            <h1 className="text-[26px] leading-tight md:text-2xl font-black uppercase tracking-tighter">Archived <span className="text-blue-500">Nodes</span></h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Complete Knowledge Repository</p>
+          <div className="min-w-0">
+            <h1 className="text-xl leading-tight md:text-2xl font-black uppercase tracking-tight md:tracking-tighter">Archived <span className="text-blue-500">Nodes</span></h1>
+            <p className="max-md:hidden text-[10px] text-slate-500 font-bold uppercase tracking-widest">Complete Knowledge Repository</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <div className="relative group flex-1 md:flex-none min-w-0">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={18} />
+            <Search className="absolute left-3.5 md:left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Search architecture..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className={`border rounded-xl py-3 md:py-2.5 pl-12 pr-4 md:pr-6 w-full md:w-80 text-[15px] md:text-sm focus:outline-none focus:border-blue-500/50 transition-all font-medium ${
+              className={`border rounded-xl py-2.5 pl-11 md:pl-12 pr-4 md:pr-6 w-full md:w-80 text-[15px] md:text-sm focus:outline-none focus:border-blue-500/50 transition-all font-medium ${
                 isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
               }`}
             />
           </div>
-          <button className={`p-3 shrink-0 border rounded-xl transition-all ${
+          <button className={`p-2.5 md:p-3 shrink-0 border rounded-xl transition-all ${
             isDark ? 'bg-white/5 border-white/10 text-slate-500 hover:text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
           }`}><Filter size={20} /></button>
         </div>
@@ -134,7 +134,7 @@ const Notes = ({ theme }) => {
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Note list */}
-        <div className="flex-1 min-w-0 md:min-w-[auto] overflow-y-auto no-scrollbar p-4 md:p-10 space-y-4">
+        <div className="flex-1 min-w-0 md:min-w-[auto] overflow-y-auto no-scrollbar p-4 pt-3 md:p-10 space-y-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <Cpu size={32} className="text-blue-500 animate-spin" />
@@ -147,7 +147,7 @@ const Notes = ({ theme }) => {
               <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Create a node inside your workspace editor to see it here.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-none gap-3 md:gap-4">
+            <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-none gap-2.5 md:gap-4">
               <div className="hidden md:grid grid-cols-12 px-6 py-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                 <div className="col-span-5">Title & Preview</div>
                 <div className="col-span-3">Workspace</div>
@@ -160,14 +160,14 @@ const Notes = ({ theme }) => {
                   key={note.id}
                   whileHover={{ x: 4 }}
                   onClick={() => setSelectedNote(note)}
-                  className={`flex flex-wrap md:grid md:grid-cols-12 items-center gap-x-2 gap-y-2 md:gap-0 p-4 md:px-6 md:py-5 rounded-2xl border transition-all cursor-pointer group ${
+                  className={`flex flex-wrap md:grid md:grid-cols-12 items-center gap-x-2 gap-y-2 md:gap-0 p-3 md:px-6 md:py-5 rounded-2xl border transition-all cursor-pointer group ${
                     isDark 
                       ? 'border-white/5 bg-white/2 hover:bg-white/5' 
                       : 'border-slate-200 bg-white hover:bg-slate-50 shadow-sm'
                   }`}
                 >
                   <div className="w-full md:w-auto min-w-0 md:col-span-5 flex items-center gap-3 md:gap-4">
-                    <div className={`w-10 h-10 shrink-0 md:shrink rounded-xl flex items-center justify-center transition-colors ${
+                    <div className={`w-9 h-9 md:w-10 md:h-10 shrink-0 md:shrink rounded-xl flex items-center justify-center transition-colors ${
                       isDark ? 'bg-white/5 text-slate-500 group-hover:text-blue-500' : 'bg-slate-50 text-slate-600 border border-slate-100 group-hover:text-blue-600'
                     }`}>
                       <FileText size={18} />
