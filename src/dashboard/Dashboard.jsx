@@ -18,6 +18,7 @@ import InfoPage from './pages/Info'
 import MetisChat from '../Metis/MetisChat'
 import { AI_ENABLED } from '../features'
 import useIsMobile from '../hooks/useIsMobile'
+import { setBackHandler, postToNative } from '../services/NativeBridge'
 import { MobileHeader, MobileTabBar, MobileMoreSheet } from './components/mobile/MobileNav'
 import Stats from './modules/Stats'
 import Notes from './modules/Notes'
@@ -102,6 +103,23 @@ function Dashboard() {
     }
     initWorkspaces()
   }, [])
+
+  // Android back button (Expo shell): close the top-most layer first
+  const backStateRef = useRef({})
+  backStateRef.current = { isMoreOpen, isCreateModalOpen, isSidebarOpen, isEditorOpen, isAiOpen, activeView }
+  useEffect(() => setBackHandler(() => {
+    const st = backStateRef.current
+    if (st.isMoreOpen) { setIsMoreOpen(false); return true }
+    if (st.isCreateModalOpen) { setIsCreateModalOpen(false); return true }
+    if (st.isSidebarOpen) { setIsSidebarOpen(false); return true }
+    if (st.isEditorOpen) { setIsEditorOpen(false); setIsEditorExpanded(false); return true }
+    if (st.isAiOpen) { setIsAiOpen(false); return true }
+    if (st.activeView !== 'graph') { setActiveView('graph'); return true }
+    return false
+  }), [])
+
+  // Let the shell match the Android status bar to the theme
+  useEffect(() => { postToNative({ type: 'theme', value: theme }) }, [theme])
 
   // Close dropdown on click outside
   useEffect(() => {

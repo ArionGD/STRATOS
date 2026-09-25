@@ -150,6 +150,28 @@ or spin-down; only the demo account is recreated. Use it for temporary testing.
 
 ---
 
+## 📱 Android App (Expo SDK 57)
+
+`mobile/` is an Expo app that wraps the hosted web app in a WebView and adds the Android
+back button, a theme-matched status bar, a loading screen while the server wakes up and an
+offline/retry screen. APKs are built in the cloud with EAS, so no Android SDK is needed locally.
+
+1. Deploy the web app to Render first and note its URL.
+2. Put that URL in `mobile/eas.json` (`EXPO_PUBLIC_STRATOS_URL`, both profiles).
+3. Build:
+   ```bash
+   cd mobile
+   npm install
+   npx eas-cli@latest login          # free Expo account
+   npx eas-cli@latest init           # links the project, writes projectId to app.json
+   npx eas-cli@latest build -p android --profile preview   # installable APK
+   ```
+4. When the build finishes, open the link EAS prints on your phone and install the APK.
+
+The `production` profile builds an `.aab` for the Play Store instead.
+
+---
+
 ## 🔒 Security & Privacy
 
 Stratos is designed as an **offline-first, local-first** application. 

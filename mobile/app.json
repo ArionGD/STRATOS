@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Stratos",
+    "slug": "stratos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F8FAFC",
+    "android": {
+      "package": "com.stratos.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#F59E0B",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.stratos.app"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "backgroundColor": "#F8FAFC",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#0F172A"
+          }
+        }
+      ]
+    ]
+  }
+}
