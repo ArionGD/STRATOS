@@ -13,11 +13,12 @@ import {
   X, Maximize2, Minimize2, Edit3, Bold, Italic, Underline, Strikethrough, Highlighter, Code, Link2,
   Heading1, Heading2, Heading3, List, ListOrdered, ListChecks, Quote, SquareCode, Table2, Minus,
   ImagePlus, Undo2, Redo2, Type, FileText, Layers, Check, CloudOff, Loader2, AtSign,
-  Rows3, Columns3, Trash2
+  Rows3, Columns3, Trash2, Pencil, FolderInput
 } from 'lucide-react'
 import { NoteService } from '../../../services/NoteService'
 import { loadOverview } from '../../../services/OverviewService'
 import { toEditorHtml, noteMentions } from '../../../utils/noteContent'
+import { ActionsMenu, ConfirmDialog, MoveDialog } from './ItemActions'
 
 /**
  * Stratos note editor (Nuclino-style)
@@ -159,7 +160,7 @@ const Sep = ({ dark }) => <span className={`w-px h-5 mx-1 shrink-0 ${dark ? 'bg-
 
 // ---------------------------------------------------------------- editor
 
-const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, isExpanded, onToggleExpand, onOpenNode }) => {
+const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, isExpanded, onToggleExpand, onOpenNode, onSaved, onDeleted, onMoved }) => {
   const dark = theme === 'dark'
   const [title, setTitle] = useState('')
   const [saveState, setSaveState] = useState('idle') // idle | unsaved | saving | saved | error
@@ -168,6 +169,8 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
   const [slashMenu, setSlashMenu] = useState(null)
   const [mentionMenu, setMentionMenu] = useState(null)
   const [overview, setOverview] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [moveOpen, setMoveOpen] = useState(false)
 
   const titleRef = useRef(null)
   const fileRef = useRef(null)
@@ -180,6 +183,9 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
   const noteRef = useRef({}) // what we're editing: { id, parentId, workspaceId }
   const titleValueRef = useRef('')
   const editorRef = useRef(null)
+  const savedTitleRef = useRef('') // last title the server has
+  const callbacksRef = useRef({})
+  callbacksRef.current = { onSaved }
 
   slashRef.current = slashMenu
   mentionRef.current = mentionMenu
@@ -213,8 +219,15 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
       note.parentId || note.workspaceId
     )
     setSaveState(res?.success ? 'saved' : 'error')
-    if (res?.success) setSavedAt(new Date())
-    else dirtyRef.current = true
+    if (res?.success) {
+      setSavedAt(new Date())
+      // Let the graph and lists pick up a new name straight away
+      const newTitle = titleValueRef.current.trim() || 'Untitled'
+      if (newTitle !== savedTitleRef.current) {
+        savedTitleRef.current = newTitle
+        callbacksRef.current.onSaved?.({ id: note.id, title: newTitle })
+      }
+    } else dirtyRef.current = true
   }, [])
 
   const scheduleSave = useCallback(() => {
@@ -337,6 +350,7 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
     load.then(({ notes }) => {
       if (cancelled) return
       const saved = (notes || []).find(n => n.id === activeNode.id)
+      savedTitleRef.current = saved?.title || activeNode.data?.label || ''
       if (saved) {
         setTitle(saved.title || activeNode.data?.label || '')
         editor.commands.setContent(toEditorHtml(saved.content), { emitUpdate: false })
@@ -434,6 +448,28 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
 
   // ---------------------------------------------------------------- actions
 
+  const deleteNote = async () => {
+    const note = noteRef.current
+    // Stop autosave first so closing the panel can't recreate the note
+    clearTimeout(timerRef.current)
+    dirtyRef.current = false
+    loadedRef.current = false
+    noteRef.current = {}
+    const res = await NoteService.deleteNote(note.id)
+    setConfirmDelete(false)
+    if (res?.success) onDeleted?.({ id: note.id, title: titleValueRef.current.trim() || 'Untitled' })
+    else { noteRef.current = note; loadedRef.current = true; window.alert("Couldn't delete this note. Please try again.") }
+  }
+
+  const moveNote = async (parentId, workspace, destination) => {
+    await flush()
+    const note = noteRef.current
+    const res = await NoteService.moveNote(note.id, parentId, workspace.id)
+    setMoveOpen(false)
+    if (res?.success) onMoved?.({ id: note.id, title: titleValueRef.current.trim() || 'Untitled', parentId, workspace, destination })
+    else window.alert("Couldn't move this note. Please try again.")
+  }
+
   const c = () => editor.chain().focus()
   const setLink = () => {
     if (state.link) { c().extendMarkRange('link').unsetLink().run(); return }
@@ -477,6 +513,11 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <ActionsMenu theme={theme} items={[
+            { label: 'Rename', icon: Pencil, onClick: () => { titleRef.current?.focus(); titleRef.current?.select() } },
+            { label: 'Move to…', icon: FolderInput, onClick: () => setMoveOpen(true) },
+            { label: 'Delete note', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
+          ]} />
           <button
             onClick={onToggleExpand}
             title={isExpanded ? 'Exit full width' : 'Full width'}
@@ -591,6 +632,24 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
         </span>
         <span className="hidden sm:inline">Type <kbd className="font-semibold">/</kbd> for blocks · <kbd className="font-semibold">@</kbd> to link</span>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        theme={theme}
+        title={`Delete “${title || 'Untitled'}”?`}
+        body="The note and its content will be removed. Anything nested under it moves up a level. This can't be undone."
+        confirmLabel="Delete note"
+        onConfirm={deleteNote}
+        onCancel={() => setConfirmDelete(false)}
+      />
+      <MoveDialog
+        open={moveOpen}
+        theme={theme}
+        overview={overview}
+        current={{ parentId: noteRef.current.parentId, workspaceId }}
+        onMove={moveNote}
+        onCancel={() => setMoveOpen(false)}
+      />
 
       {/* Selection toolbar */}
       <BubbleMenu

@@ -66,7 +66,8 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
 
   // Sync with workspace (Fetch from DB)
   useEffect(() => {
-    if (!activeWorkspace) return;
+    // No workspace left (e.g. the last one was deleted): clear the graph
+    if (!activeWorkspace) { setNodes([]); setEdges([]); return; }
     
     const loadArchitecture = async () => {
       const { clusters, notes } = await NoteService.getWorkspaceData(activeWorkspace.id);

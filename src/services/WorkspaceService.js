@@ -86,5 +86,33 @@ export const WorkspaceService = {
         return { success: false, error: err };
       }
     }
-  }
+  },
+
+  renameWorkspace: async (id, name) => run(() => isTauri
+    ? invoke('rename_workspace', { id, name })
+    : WebApi.patch(`/workspaces/${encodeURIComponent(id)}`, { name })),
+
+  // Deletes the workspace with all its clusters, notes and chats
+  deleteWorkspace: async (id) => run(() => isTauri
+    ? invoke('delete_workspace', { id })
+    : WebApi.del(`/workspaces/${encodeURIComponent(id)}`)),
+
+  renameCluster: async (id, name) => run(() => isTauri
+    ? invoke('rename_cluster', { id, name })
+    : WebApi.patch(`/clusters/${encodeURIComponent(id)}`, { name })),
+
+  // Deletes the cluster; its notes move up to the cluster's parent
+  deleteCluster: async (id) => run(() => isTauri
+    ? invoke('delete_cluster', { id })
+    : WebApi.del(`/clusters/${encodeURIComponent(id)}`))
 };
+
+async function run(fn) {
+  try {
+    await fn();
+    return { success: true };
+  } catch (err) {
+    console.error('Workspace operation failed:', err);
+    return { success: false, error: err };
+  }
+}

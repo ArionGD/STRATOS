@@ -22,6 +22,7 @@ import { setBackHandler, postToNative } from '../services/NativeBridge'
 import { MobileHeader, MobileTabBar, MobileMoreSheet } from './components/mobile/MobileNav'
 import MobileHome from './components/mobile/MobileHome'
 import { HeaderSearch, MobileSearchSheet } from './components/search/GlobalSearch'
+import { Toast } from './components/editor/ItemActions'
 import Stats from './modules/Stats'
 import Notes from './modules/Notes'
 import Plan from './modules/Plan'
@@ -78,6 +79,13 @@ function Dashboard() {
   // Bumped when a panel creates a note/cluster so the graph reloads
   const [graphReloadKey, setGraphReloadKey] = useState(0)
   const reloadGraph = () => setGraphReloadKey(k => k + 1)
+  const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
+  const notify = (text) => {
+    clearTimeout(toastTimer.current)
+    setToast({ id: Date.now(), text })
+    toastTimer.current = setTimeout(() => setToast(null), 2600)
+  }
   const isMobile = useIsMobile()
   const sidebarRef = useRef(null)
   const profileRef = useRef(null)
@@ -103,6 +111,48 @@ function Dashboard() {
     setIsMoreOpen(false)
     setIsSearchOpen(false)
     setIsEditorOpen(true)
+  }
+
+  // ---------------------------------------------------------------- rename / move / delete
+
+  const closePanel = () => {
+    setIsEditorOpen(false)
+    setIsEditorExpanded(false)
+    setActiveNode(null)
+  }
+
+  const onNoteDeleted = ({ title }) => {
+    closePanel()
+    reloadGraph()
+    notify(`Deleted “${title}”`)
+  }
+
+  const onNoteMoved = ({ id, title, parentId, workspace, destination }) => {
+    reloadGraph()
+    // Follow the note to its new place so the editor keeps saving to the right parent
+    openSearchResult({ kind: 'note', id, title, parentId, workspace })
+    notify(`Moved to ${destination || workspace.name}`)
+  }
+
+  const onWorkspaceRenamed = (ws) => {
+    setWorkspaces(list => list.map(w => (w.id === ws.id ? { ...w, name: ws.name } : w)))
+    setActiveWorkspace(prev => (prev?.id === ws.id ? { ...prev, name: ws.name } : prev))
+    reloadGraph()
+    notify(`Renamed to “${ws.name}”`)
+  }
+
+  const onWorkspaceDeleted = (ws) => {
+    const remaining = workspaces.filter(w => w.id !== ws.id)
+    setWorkspaces(remaining)
+    setActiveWorkspace(remaining[0] || null)
+    closePanel()
+    notify(`Deleted “${ws.name}”`)
+  }
+
+  const onClusterDeleted = ({ name }) => {
+    closePanel()
+    reloadGraph()
+    notify(`Deleted “${name}”`)
   }
 
   // Desktop right-panel handle: opens the editor beside the graph, closes any open panel
@@ -714,6 +764,8 @@ function Dashboard() {
                         onOpenNode={openSearchResult}
                         onChanged={reloadGraph}
                         reloadKey={graphReloadKey}
+                        onRenamed={onWorkspaceRenamed}
+                        onDeleted={onWorkspaceDeleted}
                       />
                     ) : activeNode?.data?.type === 'cluster' ? (
                       <ClusterView 
@@ -729,6 +781,8 @@ function Dashboard() {
                         onOpenNode={openSearchResult}
                         onChanged={reloadGraph}
                         reloadKey={graphReloadKey}
+                        onDeleted={onClusterDeleted}
+                        notify={notify}
                       />
                     ) : (
                       <NotesEditor 
@@ -741,6 +795,9 @@ function Dashboard() {
                         workspaceId={activeWorkspace?.id}
                         workspaceName={activeWorkspace?.name}
                         onOpenNode={openSearchResult}
+                        onSaved={reloadGraph}
+                        onDeleted={onNoteDeleted}
+                        onMoved={onNoteMoved}
                         isExpanded={isEditorExpanded}
                         onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
                       />
@@ -822,6 +879,8 @@ function Dashboard() {
         onSelect={goToView}
         onOpenMore={() => setIsMoreOpen(true)}
       />
+
+      <Toast theme={theme} message={toast} />
 
       <MobileSearchSheet
         isOpen={isSearchOpen}

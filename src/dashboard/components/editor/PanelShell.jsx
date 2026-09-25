@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { X, Maximize2, Minimize2, Plus, ChevronRight } from 'lucide-react'
 import { noteText } from '../../../utils/noteContent'
 
@@ -8,7 +8,7 @@ import { noteText } from '../../../utils/noteContent'
  * document-style scrolling body.
  */
 
-export function PanelShell({ theme, icon: Icon, iconColor = '#F59E0B', title, subtitle, onClose, isExpanded, onToggleExpand, children, footer }) {
+export function PanelShell({ theme, icon: Icon, iconColor = '#F59E0B', title, subtitle, onClose, isExpanded, onToggleExpand, children, footer, actions }) {
   const dark = theme === 'dark'
   const muted = dark ? 'text-slate-400' : 'text-slate-500'
   const border = dark ? 'border-white/10' : 'border-slate-100'
@@ -28,6 +28,7 @@ export function PanelShell({ theme, icon: Icon, iconColor = '#F59E0B', title, su
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {actions}
           {onToggleExpand && (
             <button onClick={onToggleExpand} aria-label={isExpanded ? 'Exit full width' : 'Full width'} title={isExpanded ? 'Exit full width' : 'Full width'} className={`hidden md:flex w-9 h-9 ${btn}`}>
               {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -137,4 +138,50 @@ export function InlineCreate({ theme, label, placeholder, onCreate }) {
 export const previewOf = (content, n = 70) => {
   const t = noteText(content).replace(/\s+/g, ' ').trim()
   return t.length > n ? `${t.slice(0, n - 1)}…` : t
+}
+
+/**
+ * Big page title that turns into an input when clicked (or when `editing` is
+ * set from a "Rename" menu item). Enter or blur saves, Escape cancels.
+ */
+export function EditableTitle({ theme, value, onSave, editing, setEditing, className = '' }) {
+  const dark = theme === 'dark'
+  const [draft, setDraft] = useState(value)
+  const inputRef = useRef(null)
+  useEffect(() => { if (!editing) setDraft(value) }, [value, editing])
+  useEffect(() => { if (editing) setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select() }, 0) }, [editing])
+
+  const commit = async () => {
+    const name = draft.trim()
+    setEditing(false)
+    if (name && name !== value) await onSave(name)
+    else setDraft(value)
+  }
+
+  const base = `w-full text-[28px] md:text-[34px] font-bold tracking-tight leading-tight ${className}`
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); inputRef.current?.blur() }
+          if (e.key === 'Escape') { setDraft(value); setEditing(false) }
+        }}
+        aria-label="Name"
+        className={`${base} bg-transparent outline-none border-b-2 border-amber-500 ${dark ? 'text-white' : 'text-slate-900'}`}
+      />
+    )
+  }
+  return (
+    <h1
+      onClick={() => setEditing(true)}
+      title="Click to rename"
+      className={`${base} cursor-text rounded-md -mx-1 px-1 ${dark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}
+    >
+      {value}
+    </h1>
+  )
 }

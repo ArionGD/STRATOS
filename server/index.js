@@ -201,6 +201,84 @@ app.put('/api/notes/:id', requireAuth, route(async (req, res) => {
   res.json({ id: req.params.id })
 }))
 
+// ---------------------------------------------------------------- rename / move / delete
+
+const ownedItem = async (table, id, userId) => {
+  const { rows } = await db.query(
+    `SELECT t.* FROM ${table} t JOIN workspaces w ON w.id = t.workspace_id WHERE t.id = $1 AND w.user_id = $2`,
+    [id, userId]
+  )
+  if (!rows.length) throw new HttpError(404, 'Not found')
+  return rows[0]
+}
+
+// Children of a deleted/moved item move up to that item's parent instead of being orphaned
+const reparentChildren = async (id, newParentId, workspaceId) => {
+  await db.query('UPDATE clusters SET parent_id = $1 WHERE parent_id = $2 AND workspace_id = $3', [newParentId, id, workspaceId])
+  await db.query('UPDATE notes SET parent_id = $1 WHERE parent_id = $2 AND workspace_id = $3', [newParentId, id, workspaceId])
+}
+
+app.patch('/api/workspaces/:id', requireAuth, route(async (req, res) => {
+  requireFields(req.body, ['name'])
+  await assertWorkspaceOwner(req.params.id, req.userId)
+  await db.query('UPDATE workspaces SET name = $1 WHERE id = $2', [req.body.name.trim(), req.params.id])
+  await db.query('UPDATE conversations SET workspace_name = $1 WHERE workspace_id = $2 AND user_id = $3', [req.body.name.trim(), req.params.id, req.userId])
+  res.json({ id: req.params.id, name: req.body.name.trim() })
+}))
+
+app.delete('/api/workspaces/:id', requireAuth, route(async (req, res) => {
+  await assertWorkspaceOwner(req.params.id, req.userId)
+  // clusters and notes go with it (ON DELETE CASCADE); conversations have no FK
+  await db.query('DELETE FROM conversations WHERE workspace_id = $1 AND user_id = $2', [req.params.id, req.userId])
+  await db.query('DELETE FROM workspaces WHERE id = $1', [req.params.id])
+  res.json({ id: req.params.id })
+}))
+
+app.patch('/api/clusters/:id', requireAuth, route(async (req, res) => {
+  requireFields(req.body, ['name'])
+  await ownedItem('clusters', req.params.id, req.userId)
+  await db.query('UPDATE clusters SET name = $1 WHERE id = $2', [req.body.name.trim(), req.params.id])
+  res.json({ id: req.params.id, name: req.body.name.trim() })
+}))
+
+app.delete('/api/clusters/:id', requireAuth, route(async (req, res) => {
+  const cluster = await ownedItem('clusters', req.params.id, req.userId)
+  await reparentChildren(cluster.id, cluster.parent_id, cluster.workspace_id)
+  await db.query('DELETE FROM clusters WHERE id = $1', [cluster.id])
+  res.json({ id: cluster.id, movedTo: cluster.parent_id })
+}))
+
+// Move a note under another parent, optionally in another workspace
+app.patch('/api/notes/:id', requireAuth, route(async (req, res) => {
+  requireFields(req.body, ['parent_id', 'workspace_id'])
+  const note = await ownedItem('notes', req.params.id, req.userId)
+  const { parent_id, workspace_id } = req.body
+  await assertWorkspaceOwner(workspace_id, req.userId)
+  if (parent_id === note.id) throw new HttpError(400, 'A note cannot contain itself')
+  if (parent_id !== 'root-node') {
+    const target = await db.query(
+      `SELECT id FROM clusters WHERE id = $1 AND workspace_id = $2
+       UNION SELECT id FROM notes WHERE id = $1 AND workspace_id = $2`,
+      [parent_id, workspace_id]
+    )
+    if (!target.rows.length) throw new HttpError(400, 'That destination does not exist')
+  }
+  // Anything nested under this note stays where it was, attached to the note's old parent
+  await reparentChildren(note.id, note.parent_id, note.workspace_id)
+  await db.query(
+    'UPDATE notes SET parent_id = $1, workspace_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+    [parent_id, workspace_id, note.id]
+  )
+  res.json({ id: note.id, parent_id, workspace_id })
+}))
+
+app.delete('/api/notes/:id', requireAuth, route(async (req, res) => {
+  const note = await ownedItem('notes', req.params.id, req.userId)
+  await reparentChildren(note.id, note.parent_id, note.workspace_id)
+  await db.query('DELETE FROM notes WHERE id = $1', [note.id])
+  res.json({ id: note.id })
+}))
+
 // ---------------------------------------------------------------- METIS conversations
 
 app.get('/api/conversations', requireAuth, route(async (req, res) => {

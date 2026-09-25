@@ -168,3 +168,80 @@ pub fn list_conversations(
 
     Ok(conversations)
 }
+
+// ---------------------------------------------------------------- rename / move / delete
+
+/// Children of a deleted or moved item move up to that item's parent
+fn reparent_children(conn: &rusqlite::Connection, id: &str, new_parent: &str, workspace_id: &str) -> Result<(), String> {
+    conn.execute("UPDATE clusters SET parent_id = ?1 WHERE parent_id = ?2 AND workspace_id = ?3", (new_parent, id, workspace_id))
+        .map_err(|e| e.to_string())?;
+    conn.execute("UPDATE notes SET parent_id = ?1 WHERE parent_id = ?2 AND workspace_id = ?3", (new_parent, id, workspace_id))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn parent_and_workspace(conn: &rusqlite::Connection, table: &str, id: &str) -> Result<(String, String), String> {
+    let sql = format!("SELECT parent_id, workspace_id FROM {} WHERE id = ?1", table);
+    conn.query_row(&sql, [id], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
+        .map_err(|_| "Not found".to_string())
+}
+
+#[tauri::command]
+pub fn rename_workspace(state: State<DbState>, id: String, name: String) -> Result<String, String> {
+    let conn = state.conn.lock().unwrap();
+    conn.execute("UPDATE workspaces SET name = ?1 WHERE id = ?2", (&name, &id)).map_err(|e| e.to_string())?;
+    conn.execute("UPDATE conversations SET workspace_name = ?1 WHERE workspace_id = ?2", (&name, &id)).map_err(|e| e.to_string())?;
+    Ok("Workspace renamed".to_string())
+}
+
+#[tauri::command]
+pub fn delete_workspace(state: State<DbState>, id: String) -> Result<String, String> {
+    let conn = state.conn.lock().unwrap();
+    for sql in [
+        "DELETE FROM notes WHERE workspace_id = ?1",
+        "DELETE FROM clusters WHERE workspace_id = ?1",
+        "DELETE FROM conversations WHERE workspace_id = ?1",
+        "DELETE FROM workspaces WHERE id = ?1",
+    ] {
+        conn.execute(sql, [&id]).map_err(|e| e.to_string())?;
+    }
+    Ok("Workspace deleted".to_string())
+}
+
+#[tauri::command]
+pub fn rename_cluster(state: State<DbState>, id: String, name: String) -> Result<String, String> {
+    let conn = state.conn.lock().unwrap();
+    conn.execute("UPDATE clusters SET name = ?1 WHERE id = ?2", (&name, &id)).map_err(|e| e.to_string())?;
+    Ok("Cluster renamed".to_string())
+}
+
+#[tauri::command]
+pub fn delete_cluster(state: State<DbState>, id: String) -> Result<String, String> {
+    let conn = state.conn.lock().unwrap();
+    let (parent, workspace) = parent_and_workspace(&conn, "clusters", &id)?;
+    reparent_children(&conn, &id, &parent, &workspace)?;
+    conn.execute("DELETE FROM clusters WHERE id = ?1", [&id]).map_err(|e| e.to_string())?;
+    Ok("Cluster deleted".to_string())
+}
+
+#[tauri::command]
+pub fn move_note(state: State<DbState>, id: String, parent_id: String, workspace_id: String) -> Result<String, String> {
+    if parent_id == id {
+        return Err("A note cannot contain itself".to_string());
+    }
+    let conn = state.conn.lock().unwrap();
+    let (old_parent, old_workspace) = parent_and_workspace(&conn, "notes", &id)?;
+    reparent_children(&conn, &id, &old_parent, &old_workspace)?;
+    conn.execute("UPDATE notes SET parent_id = ?1, workspace_id = ?2 WHERE id = ?3", (&parent_id, &workspace_id, &id))
+        .map_err(|e| e.to_string())?;
+    Ok("Note moved".to_string())
+}
+
+#[tauri::command]
+pub fn delete_note(state: State<DbState>, id: String) -> Result<String, String> {
+    let conn = state.conn.lock().unwrap();
+    let (parent, workspace) = parent_and_workspace(&conn, "notes", &id)?;
+    reparent_children(&conn, &id, &parent, &workspace)?;
+    conn.execute("DELETE FROM notes WHERE id = ?1", [&id]).map_err(|e| e.to_string())?;
+    Ok("Note deleted".to_string())
+}

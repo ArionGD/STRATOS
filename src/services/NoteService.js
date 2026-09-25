@@ -59,5 +59,29 @@ export const NoteService = {
         return { clusters: [], notes: [] };
       }
     }
+  },
+
+  // Delete a note (anything nested under it moves up to its parent)
+  deleteNote: async (noteId) => {
+    try {
+      if (isTauri) await invoke('delete_note', { id: noteId });
+      else await WebApi.del(`/notes/${encodeURIComponent(noteId)}`);
+      return { success: true };
+    } catch (err) {
+      console.error('Delete note failed:', err);
+      return { success: false, error: err };
+    }
+  },
+
+  // Move a note under another cluster/note, or to a workspace's root
+  moveNote: async (noteId, parentId, workspaceId) => {
+    try {
+      if (isTauri) await invoke('move_note', { id: noteId, parentId, workspaceId });
+      else await WebApi.patch(`/notes/${encodeURIComponent(noteId)}`, { parent_id: parentId, workspace_id: workspaceId });
+      return { success: true };
+    } catch (err) {
+      console.error('Move note failed:', err);
+      return { success: false, error: err };
+    }
   }
 };

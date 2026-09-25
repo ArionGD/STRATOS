@@ -1,17 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Layers, FileText, Plus, LayoutGrid } from 'lucide-react'
+import { Layers, FileText, Plus, LayoutGrid, Pencil, Trash2 } from 'lucide-react'
 import { NoteService } from '../../../services/NoteService'
+import { WorkspaceService } from '../../../services/WorkspaceService'
 import { loadOverview } from '../../../services/OverviewService'
 import { nodeColors } from '../graph/palette'
 import { wordCount, noteMentions } from '../../../utils/noteContent'
-import { PanelShell, PanelSection, StatRow, ItemRow, previewOf } from './PanelShell'
+import { PanelShell, PanelSection, StatRow, ItemRow, EditableTitle, previewOf } from './PanelShell'
+import { ActionsMenu, ConfirmDialog } from './ItemActions'
 
 // Cluster panel: its notes, a quick way to add one, and notes that link here
-const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey }) => {
+const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey, onDeleted, notify }) => {
   const dark = theme === 'dark'
   const [data, setData] = useState(null)
   const [overview, setOverview] = useState(null)
   const [version, setVersion] = useState(0)
+  const [renaming, setRenaming] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (!workspace?.id) return
@@ -56,6 +60,21 @@ const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpa
     onOpenNode?.({ kind: 'note', id: note.id, title: note.title, parentId: node.id, workspace })
   }
 
+  const rename = async (newName) => {
+    const res = await WorkspaceService.renameCluster(node.id, newName)
+    if (!res?.success) { window.alert("Couldn't rename the cluster. Please try again."); return }
+    setVersion(v => v + 1)
+    onChanged?.()
+    notify?.(`Renamed to “${newName}”`)
+  }
+
+  const remove = async () => {
+    const res = await WorkspaceService.deleteCluster(node.id)
+    setConfirmDelete(false)
+    if (res?.success) onDeleted?.({ id: node.id, name })
+    else window.alert("Couldn't delete the cluster. Please try again.")
+  }
+
   return (
     <PanelShell
       theme={theme}
@@ -67,11 +86,15 @@ const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpa
       isExpanded={isExpanded}
       onToggleExpand={onToggleExpand}
       footer={<span>{clusterNotes.length} {clusterNotes.length === 1 ? 'note' : 'notes'} · {words} words</span>}
+      actions={<ActionsMenu theme={theme} items={[
+        { label: 'Rename cluster', icon: Pencil, onClick: () => setRenaming(true) },
+        { label: 'Delete cluster', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
+      ]} />}
     >
       <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color }}>
         <span className="w-2 h-2 rounded-full" style={{ background: color }} /> Cluster
       </div>
-      <h1 className="mt-1 text-[28px] md:text-[34px] font-bold tracking-tight leading-tight">{name}</h1>
+      <EditableTitle theme={theme} value={name} onSave={rename} editing={renaming} setEditing={setRenaming} className="mt-1" />
       <button
         onClick={() => onOpenNode?.({ kind: 'workspace', id: 'root-node', title: workspace?.name, workspace })}
         className={`mt-1.5 inline-flex items-center gap-1.5 text-[13px] ${dark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
@@ -114,6 +137,17 @@ const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpa
           </div>
         </PanelSection>
       )}
+      <ConfirmDialog
+        open={confirmDelete}
+        theme={theme}
+        title={`Delete “${name}”?`}
+        body={clusterNotes.length
+          ? `The cluster is removed and its ${clusterNotes.length} ${clusterNotes.length === 1 ? 'note moves' : 'notes move'} up to the workspace, so nothing is lost.`
+          : 'The cluster is removed. It has no notes.'}
+        confirmLabel="Delete cluster"
+        onConfirm={remove}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </PanelShell>
   )
 }

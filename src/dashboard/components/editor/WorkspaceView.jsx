@@ -1,16 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { LayoutGrid, Layers, FileText, Plus } from 'lucide-react'
+import { LayoutGrid, Layers, FileText, Plus, Pencil, Trash2 } from 'lucide-react'
 import { NoteService } from '../../../services/NoteService'
 import { WorkspaceService } from '../../../services/WorkspaceService'
 import { nodeColors, LOOSE_NOTE_COLOR } from '../graph/palette'
 import { wordCount } from '../../../utils/noteContent'
-import { PanelShell, PanelSection, StatRow, ItemRow, InlineCreate, previewOf } from './PanelShell'
+import { PanelShell, PanelSection, StatRow, ItemRow, InlineCreate, EditableTitle, previewOf } from './PanelShell'
+import { ActionsMenu, ConfirmDialog } from './ItemActions'
 
 // Workspace (root node) panel: what's in this workspace and quick ways to add to it
-const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey }) => {
+const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey, onRenamed, onDeleted }) => {
   const dark = theme === 'dark'
   const [data, setData] = useState(null)
   const [version, setVersion] = useState(0)
+  const [renaming, setRenaming] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (!workspace?.id) return
@@ -50,6 +53,19 @@ const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, 
     if (res?.success) refresh()
   }
 
+  const rename = async (name) => {
+    const res = await WorkspaceService.renameWorkspace(workspace.id, name)
+    if (res?.success) onRenamed?.({ ...workspace, name })
+    else window.alert("Couldn't rename the workspace. Please try again.")
+  }
+
+  const remove = async () => {
+    const res = await WorkspaceService.deleteWorkspace(workspace.id)
+    setConfirmDelete(false)
+    if (res?.success) onDeleted?.(workspace)
+    else window.alert("Couldn't delete the workspace. Please try again.")
+  }
+
   return (
     <PanelShell
       theme={theme}
@@ -60,8 +76,12 @@ const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, 
       isExpanded={isExpanded}
       onToggleExpand={onToggleExpand}
       footer={<span>{clusters.length} clusters · {notes.length} notes</span>}
+      actions={<ActionsMenu theme={theme} items={[
+        { label: 'Rename workspace', icon: Pencil, onClick: () => setRenaming(true) },
+        { label: 'Delete workspace', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
+      ]} />}
     >
-      <h1 className="text-[28px] md:text-[34px] font-bold tracking-tight leading-tight">{workspace?.name || 'Workspace'}</h1>
+      <EditableTitle theme={theme} value={workspace?.name || 'Workspace'} onSave={rename} editing={renaming} setEditing={setRenaming} />
       <p className={`mt-1.5 text-[13.5px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
         Everything in this workspace. Open a cluster or note, or add something new.
       </p>
@@ -106,6 +126,15 @@ const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, 
           ))}
         </div>
       </PanelSection>
+      <ConfirmDialog
+        open={confirmDelete}
+        theme={theme}
+        title={`Delete “${workspace?.name}”?`}
+        body={`This deletes the workspace with its ${clusters.length} ${clusters.length === 1 ? 'cluster' : 'clusters'} and ${notes.length} ${notes.length === 1 ? 'note' : 'notes'}. This can't be undone.`}
+        confirmLabel="Delete workspace"
+        onConfirm={remove}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </PanelShell>
   )
 }
