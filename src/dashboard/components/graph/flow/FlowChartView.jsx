@@ -22,13 +22,14 @@ const nodeTypes = {
 // Assigns positions so that:
 //   • Every node at the same depth shares the same Y coordinate
 //   • Siblings are spaced equally on the X axis
-const H_GAP = 220   // horizontal gap between siblings
-const V_GAP = 140   // vertical gap between depth levels
+const H_GAP = 132   // horizontal space per leaf
+const V_GAP = 150   // vertical gap between depth levels
+const D_NODE_SIZE = { workspace: [144, 48], cluster: [72, 72], note: [56, 56] }
 
 // Phone layout: the tree flows left-to-right so it grows down the tall screen
 // (siblings stacked vertically) and nodes stay legible after fitView.
 const M_SIBLING_GAP = 96   // vertical gap between siblings (mobile)
-const M_DEPTH_GAP = 135    // horizontal gap between depth levels (mobile)
+const M_DEPTH_GAP = 168    // horizontal gap between depth levels (mobile; room for connectors)
 const M_NODE_SIZE = { workspace: [128, 64], cluster: [104, 77], note: [76, 76] }
 
 function layoutTree(nodes, edges, horizontal = false) {
@@ -117,27 +118,26 @@ function layoutTree(nodes, edges, horizontal = false) {
     }
     return nodes.map(n => {
       const abs = absTopLeft(n)
-      if (!abs) return n
-      // ReactFlow treats `parentId` positions as relative to the parent node
-      const parent = n.parentId && byId[n.parentId]
-      const parentAbs = parent ? absTopLeft(parent) : null
-      return {
-        ...n,
-        sourcePosition: 'right',
-        targetPosition: 'left',
-        position: parentAbs ? { x: abs.x - parentAbs.x, y: abs.y - parentAbs.y } : abs
-      }
+      return abs ? { ...detach(n), sourcePosition: 'right', targetPosition: 'left', position: abs } : detach(n)
     })
   }
 
-  // Apply positions, centering the root
+  // Vertical tree: centre each node on its slot (positions are top-left corners)
   const rootX = posMap[root.id]?.x || 0
-  return nodes.map(n => ({
-    ...n,
-    position: posMap[n.id]
-      ? { x: posMap[n.id].x - rootX, y: posMap[n.id].y }
-      : n.position
-  }))
+  return nodes.map(n => {
+    const p = posMap[n.id]
+    if (!p) return detach(n)
+    const [w, h] = D_NODE_SIZE[n.type] || D_NODE_SIZE.note
+    return { ...detach(n), position: { x: p.x - rootX - w / 2, y: p.y - h / 2 } }
+  })
+}
+
+// ReactFlow treats a node with `parentId` as positioned relative to that parent,
+// which compounded the offsets and blew the tree apart. The layout already gives
+// absolute positions, so hand ReactFlow nodes without the parent link.
+function detach(n) {
+  const { parentId, parentNode, ...rest } = n
+  return rest
 }
 // ─────────────────────────────────────────────────────────────────
 
@@ -157,7 +157,8 @@ const FlowChartView = ({
   displayMode 
 }) => {
   const onNodeClick = useCallback((event, node) => {
-    setActiveNode(node)
+    // Hand the editor the original node (it needs parentId to save correctly)
+    setActiveNode(nodes.find(n => n.id === node.id) || node)
     setDashboardNodes(nodes)
     setIsEditorOpen(true)
   }, [setActiveNode, setIsEditorOpen, setDashboardNodes, nodes])
@@ -169,7 +170,7 @@ const FlowChartView = ({
   const fitOptions = useMemo(() => (
     isMobile
       ? { padding: 0.08, minZoom: 0.55, maxZoom: 1.2 }
-      : { padding: 0.38, minZoom: 0.3, maxZoom: 1.5 }
+      : { padding: 0.2, minZoom: 0.3, maxZoom: 1.25 }
   ), [isMobile])
 
   useEffect(() => {
@@ -191,9 +192,13 @@ const FlowChartView = ({
     [nodes, edges, isMobile]
   )
 
+  // Right-angle org-chart connectors; no dash animation (it repaints every frame)
   const styledEdges = useMemo(() => edges.map(e => ({
     ...e,
-    style: { stroke: theme === 'dark' ? '#475569' : '#CBD5E1', strokeWidth: 1.5, opacity: 0.8 },
+    type: 'smoothstep',
+    pathOptions: { borderRadius: 14 },
+    animated: false,
+    style: { stroke: theme === 'dark' ? '#475569' : '#CBD5E1', strokeWidth: 1.5, opacity: 0.9 },
     markerEnd: { type: MarkerType.ArrowClosed, color: theme === 'dark' ? '#475569' : '#CBD5E1' }
   })), [edges, theme])
 
@@ -208,13 +213,11 @@ const FlowChartView = ({
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
-        {...(isMobile ? {
-          fitViewOptions: fitOptions,
-          // Layout is computed, so dragging is meaningless on touch — let drags pan the canvas
-          nodesDraggable: false,
-          nodesConnectable: false,
-          minZoom: 0.3
-        } : {})}
+        fitViewOptions={fitOptions}
+        // Layout is computed: dragging a node only snapped it back, so drags pan instead
+        nodesDraggable={false}
+        nodesConnectable={false}
+        minZoom={0.3}
         proOptions={{ hideAttribution: true }}
         className="touch-none"
       >

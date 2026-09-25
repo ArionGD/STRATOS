@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow'
 import FlowChartView from './flow/FlowChartView'
-import NodeGraphSymmetryView from './node/NodeGraphSymmetryView'
 import ListView from './list/ListView'
 import ForceGraphView from './force/ForceGraphView'
 import CommandBar from './CommandBar'
@@ -188,19 +187,14 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
         )}
         
         {displayMode === 'node' && (
-          <NodeGraphSymmetryView 
+          <ForceGraphView
+            variant="organic"
             theme={theme}
-            activeWorkspace={activeWorkspace}
             nodes={nodes}
-            onNodesChange={onNodesChange}
             edges={edges}
-            onEdgesChange={onEdgesChange}
-            displayMode={displayMode}
             setActiveNode={setActiveNode}
             setIsEditorOpen={setIsEditorOpen}
             setDashboardNodes={setDashboardNodes}
-            isEditorOpen={isEditorOpen}
-            isAiOpen={isAiOpen}
           />
         )}
 

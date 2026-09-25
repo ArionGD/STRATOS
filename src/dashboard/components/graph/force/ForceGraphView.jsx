@@ -28,7 +28,71 @@ const THEMES = {
   dark: { label: '#E2E8F0', halo: 'rgba(15,23,42,0.92)', edge: 'rgba(148,163,184,0.26)', grid: 'rgba(148,163,184,0.24)', ring: '#0F172A' }
 }
 
+// 'organic' variant (Node view): Nuclino-style neutral dots, free force layout
+const ORGANIC_RADIUS = { workspace: 12, cluster: 8.5, note: 5.5 }
+const ORGANIC = {
+  light: { collection: '#64748B', item: '#94A3B8', root: '#334155', accent: '#6366F1', accentSoft: '#A5B4FC', edge: 'rgba(100,116,139,0.35)', label: '#475569' },
+  dark: { collection: '#94A3B8', item: '#64748B', root: '#E2E8F0', accent: '#818CF8', accentSoft: '#6366F1', edge: 'rgba(148,163,184,0.28)', label: '#CBD5E1' }
+}
+
 const FADED = 0.14
+
+// ---------------------------------------------------------------- glass-ball sprites
+// Each ball (glow + shaded sphere + highlight) is drawn once per colour and
+// on-screen size into a small canvas, then stamped with drawImage. That keeps
+// the look of a blurred glow without paying for shadowBlur on every frame.
+const hexToRgb = (hex) => {
+  const v = parseInt(hex.slice(1), 16)
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255]
+}
+const mix = ([r, g, b], [r2, g2, b2], t) => `rgb(${Math.round(r + (r2 - r) * t)},${Math.round(g + (g2 - g) * t)},${Math.round(b + (b2 - b) * t)})`
+const spriteCache = new Map()
+
+function ballSprite(color, radiusPx) {
+  const R = Math.max(4, Math.round(radiusPx / 2) * 2) // bucket sizes so zooming reuses sprites
+  const key = `${color}|${R}`
+  let sprite = spriteCache.get(key)
+  if (sprite) return sprite
+  if (spriteCache.size > 240) spriteCache.clear()
+
+  const pad = Math.ceil(R * 1.1) // room for the glow
+  const size = (R + pad) * 2
+  const c = document.createElement('canvas')
+  c.width = c.height = size
+  const g = c.getContext('2d')
+  const cx = size / 2, cy = size / 2
+  const rgb = hexToRgb(color)
+
+  // Coloured glow, a little below the ball like a soft cast shadow
+  const glow = g.createRadialGradient(cx, cy + R * 0.3, R * 0.5, cx, cy + R * 0.3, R + pad)
+  glow.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.42)`)
+  glow.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`)
+  g.fillStyle = glow
+  g.fillRect(0, 0, size, size)
+
+  // Sphere shading: lit from the top-left
+  const body = g.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R)
+  body.addColorStop(0, mix(rgb, [255, 255, 255], 0.55))
+  body.addColorStop(0.5, color)
+  body.addColorStop(1, mix(rgb, [15, 23, 42], 0.35))
+  g.fillStyle = body
+  g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill()
+
+  // Glass rim and specular highlight
+  g.strokeStyle = 'rgba(255,255,255,0.55)'
+  g.lineWidth = Math.max(1, R * 0.08)
+  g.beginPath(); g.arc(cx, cy, R - g.lineWidth / 2, 0, Math.PI * 2); g.stroke()
+  const hx = cx - R * 0.32, hy = cy - R * 0.42
+  const spec = g.createRadialGradient(hx, hy, 0, hx, hy, R * 0.5)
+  spec.addColorStop(0, 'rgba(255,255,255,0.9)')
+  spec.addColorStop(1, 'rgba(255,255,255,0)')
+  g.fillStyle = spec
+  g.beginPath(); g.ellipse(hx, hy, R * 0.48, R * 0.3, -0.5, 0, Math.PI * 2); g.fill()
+
+  sprite = { canvas: c, R, size }
+  spriteCache.set(key, sprite)
+  return sprite
+}
 const clamp01 = (v) => Math.max(0, Math.min(1, v))
 const easeOutBack = (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2) }
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
@@ -37,7 +101,7 @@ const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 // Converts the ReactFlow-shaped nodes/edges used by the other views into a sim graph
-function buildGraph(rfNodes, rfEdges) {
+function buildGraph(rfNodes, rfEdges, variant = 'radial') {
   const byId = new Map(rfNodes.map(n => [n.id, n]))
   const clusterColor = new Map()
   rfNodes.filter(n => n.type === 'cluster').forEach((n, i) => clusterColor.set(n.id, CLUSTER_COLORS[i % CLUSTER_COLORS.length]))
@@ -72,7 +136,9 @@ function buildGraph(rfNodes, rfEdges) {
       parentId: n.parentId,
       label: n.data?.label || 'Untitled',
       color: colorOf({ ...n, type }),
-      r: BASE_RADIUS[type] + Math.min(6, (degree.get(n.id) || 0) * 0.7),
+      r: variant === 'organic'
+        ? ORGANIC_RADIUS[type] + Math.min(4, (degree.get(n.id) || 0) * 0.5)
+        : BASE_RADIUS[type] + Math.min(6, (degree.get(n.id) || 0) * 0.7),
       vis: 1
     }
   })
@@ -132,7 +198,7 @@ function computeTargets(graph) {
   return targets
 }
 
-const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, setIsEditorOpen, setDashboardNodes }) => {
+const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, setIsEditorOpen, setDashboardNodes, variant = 'radial' }) => {
   const isMobile = useIsMobile()
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
@@ -160,6 +226,8 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
   }).current
 
   s.theme = THEMES[theme === 'dark' ? 'dark' : 'light']
+  s.palette = ORGANIC[theme === 'dark' ? 'dark' : 'light']
+  s.variant = variant
   s.isMobile = isMobile
   s.rfNodes = rfNodes
   s.callbacks = { setActiveNode, setIsEditorOpen, setDashboardNodes }
@@ -298,7 +366,17 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
       if (n.grow < 1) animating = true
     })
 
-    // Edges: gentle curves; the focused node's edges light up in its colour
+    const organic = s.variant === 'organic'
+    const P = s.palette
+    // Organic: neutral dots that turn accent when focused (Nuclino style)
+    const colorOf = (n) => {
+      if (!organic) return n.color
+      if (activeId && n.id === activeId) return P.accent
+      if (activeId && neighbours?.has(n.id)) return P.accentSoft
+      return n.type === 'workspace' ? P.root : n.type === 'cluster' ? P.collection : P.item
+    }
+
+    // Edges: gentle curves (straight hairlines in organic); focused edges light up
     ctx.lineCap = 'round'
     links.forEach(l => {
       const a = l.source, b = l.target
@@ -307,10 +385,12 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
       if (alpha <= 0.01) return
       const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2
       const dx = b.x - a.x, dy = b.y - a.y
-      const bend = 0.08
+      const bend = organic ? 0 : 0.08
       ctx.globalAlpha = alpha
-      ctx.strokeStyle = lit ? (a.id === activeId ? a.color : b.color) : T.edge
-      ctx.lineWidth = lit ? 2.2 : 1.2
+      ctx.strokeStyle = lit
+        ? (organic ? P.accent : (a.id === activeId ? a.color : b.color))
+        : (organic ? P.edge : T.edge)
+      ctx.lineWidth = organic ? (lit ? 1.6 : 1) : (lit ? 2.2 : 1.2)
       ctx.beginPath()
       ctx.moveTo(a.x, a.y)
       ctx.quadraticCurveTo(mx - dy * bend, my + dx * bend, b.x, b.y)
@@ -325,48 +405,67 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
       const isActive = n.id === activeId
       ctx.globalAlpha = n.vis
 
+      const fill = colorOf(n)
+
       if (isActive) {
-        ctx.fillStyle = n.color
+        ctx.fillStyle = fill
         ctx.globalAlpha = 0.18 * n.vis
-        ctx.beginPath(); ctx.arc(n.x, n.y, r + 9, 0, Math.PI * 2); ctx.fill()
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + (organic ? 6 : 9), 0, Math.PI * 2); ctx.fill()
         ctx.globalAlpha = n.vis
       }
 
-      ctx.beginPath()
-      ctx.arc(n.x, n.y, r, 0, Math.PI * 2)
-      ctx.fillStyle = n.color
-      ctx.fill()
-      ctx.lineWidth = n.type === 'workspace' ? 3 : 2
-      ctx.strokeStyle = T.ring
-      ctx.stroke()
+      // Selected node pulses: a ring that expands and fades every 1.6s
+      if (n.id === s.focus && !s.reduced) {
+        const phase = (now % 1600) / 1600
+        ctx.globalAlpha = 0.45 * (1 - phase) * n.vis
+        ctx.strokeStyle = fill
+        ctx.lineWidth = 2 / k
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 3 + phase * 16, 0, Math.PI * 2); ctx.stroke()
+        ctx.globalAlpha = n.vis
+        animating = true
+      }
 
-      if (n.type === 'note') {
-        // Notes get a soft inner dot so they read differently from clusters
+      if (organic) {
         ctx.beginPath()
-        ctx.arc(n.x, n.y, r * 0.38, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(255,255,255,0.75)'
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2)
+        ctx.fillStyle = fill
         ctx.fill()
+        ctx.lineWidth = 1.5
+        ctx.strokeStyle = T.ring
+        ctx.stroke()
+      } else {
+        // Glass ball: cached sprite sized to the current on-screen radius
+        const sp = ballSprite(fill, r * k * dpr)
+        const worldPerPx = r / sp.R
+        const drawn = sp.size * worldPerPx
+        ctx.drawImage(sp.canvas, n.x - drawn / 2, n.y - drawn / 2, drawn, drawn)
       }
     })
 
-    // Labels (screen-constant size; notes' labels appear once zoomed in enough)
-    const fontPx = 12 / k
+    // Labels keep a constant on-screen size and fade in as you zoom in
+    // (organic hides them earlier for a clean zoomed-out view, like Nuclino)
+    const fontPx = (organic ? 11 : 12) / k
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     ctx.lineJoin = 'round'
     nodes.forEach(n => {
       const isActive = n.id === activeId || neighbours?.has(n.id)
-      const show = n.type !== 'note' || k > 0.75 || isActive
-      if (!show || n.grow < 0.6) return
+      const from = organic
+        ? (n.type === 'note' ? 0.85 : n.type === 'cluster' ? 0.5 : 0.3)
+        : (n.type === 'note' ? 0.65 : 0)
+      const zoomFade = isActive ? 1 : clamp01((k - from) / 0.2)
+      if (zoomFade <= 0 || n.grow < 0.6) return
       const size = n.type === 'workspace' ? fontPx * 1.15 : fontPx
-      ctx.font = `${n.type === 'note' ? 600 : 800} ${size}px Inter, ui-sans-serif, system-ui, sans-serif`
+      ctx.font = organic
+        ? `${n.type === 'note' ? 500 : 700} ${size}px Inter, ui-sans-serif, system-ui, sans-serif`
+        : `${n.type === 'note' ? 600 : 800} ${size}px Inter, ui-sans-serif, system-ui, sans-serif`
       const text = truncate(n.label, n.type === 'note' ? 22 : 28)
       const y = n.y + n.r + 5 / k
-      ctx.globalAlpha = n.vis
+      ctx.globalAlpha = n.vis * zoomFade
       ctx.lineWidth = 4 / k
       ctx.strokeStyle = T.halo
       ctx.strokeText(text, n.x, y)
-      ctx.fillStyle = T.label
+      ctx.fillStyle = organic ? (isActive && activeId ? P.accent : P.label) : T.label
       ctx.fillText(text, n.x, y)
     })
 
@@ -385,7 +484,7 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
     if (signature === s.signature) return
     s.signature = signature
 
-    const graph = buildGraph(rfNodes, rfEdges)
+    const graph = buildGraph(rfNodes, rfEdges, s.variant)
     const now = performance.now()
     const firstLoad = s.positions.size === 0
 
@@ -422,18 +521,33 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
     s.graph = graph
     if (s.focus && !ids.has(s.focus)) s.focus = null
 
-    const targets = computeTargets(graph)
-    graph.nodes.forEach(n => { n.tx = targets.get(n.id).x; n.ty = targets.get(n.id).y })
-
     s.sim?.stop()
-    s.sim = forceSimulation(graph.nodes)
-      // Each node springs toward its equal-angle slot; links and a light
-      // repulsion keep the motion elastic without bending the angles
-      .force('x', forceX(d => d.tx).strength(0.28))
-      .force('y', forceY(d => d.ty).strength(0.28))
-      .force('link', forceLink(graph.links).id(d => d.id).distance(l => Math.hypot(l.target.tx - l.source.tx, l.target.ty - l.source.ty) || 80).strength(0.08))
-      .force('charge', forceManyBody().strength(-40).distanceMax(160))
-      .force('collide', forceCollide(d => d.r + 10).strength(0.7))
+    if (s.variant === 'organic') {
+      // Free force layout: collections gather their items into loose clusters
+      s.sim = forceSimulation(graph.nodes)
+        .force('link', forceLink(graph.links).id(d => d.id)
+          .distance(l => (l.source.type === 'workspace' ? 115 : 66))
+          .strength(0.7))
+        .force('charge', forceManyBody()
+          .strength(d => (d.type === 'workspace' ? -320 : d.type === 'cluster' ? -170 : -70))
+          .distanceMax(420))
+        // Wider than the dots themselves so neighbouring titles don't touch
+        .force('collide', forceCollide(d => d.r + 18).strength(0.85))
+        .force('x', forceX(0).strength(0.045))
+        .force('y', forceY(0).strength(0.045))
+    } else {
+      const targets = computeTargets(graph)
+      graph.nodes.forEach(n => { n.tx = targets.get(n.id).x; n.ty = targets.get(n.id).y })
+      s.sim = forceSimulation(graph.nodes)
+        // Each node springs toward its equal-angle slot; links and a light
+        // repulsion keep the motion elastic without bending the angles
+        .force('x', forceX(d => d.tx).strength(0.28))
+        .force('y', forceY(d => d.ty).strength(0.28))
+        .force('link', forceLink(graph.links).id(d => d.id).distance(l => Math.hypot(l.target.tx - l.source.tx, l.target.ty - l.source.ty) || 80).strength(0.08))
+        .force('charge', forceManyBody().strength(-40).distanceMax(160))
+        .force('collide', forceCollide(d => d.r + 10).strength(0.7))
+    }
+    s.sim
       .velocityDecay(0.32)
       .alphaDecay(0.03)
       .alphaMin(0.004)
