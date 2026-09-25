@@ -21,6 +21,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { setBackHandler, postToNative } from '../services/NativeBridge'
 import { MobileHeader, MobileTabBar, MobileMoreSheet } from './components/mobile/MobileNav'
 import MobileHome from './components/mobile/MobileHome'
+import { HeaderSearch, MobileSearchSheet } from './components/search/GlobalSearch'
 import Stats from './modules/Stats'
 import Notes from './modules/Notes'
 import Plan from './modules/Plan'
@@ -44,7 +45,9 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  LogOut
+  LogOut,
+  PanelRightOpen,
+  PanelRightClose
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import useUserStore from '../store/useUserStore'
@@ -71,6 +74,7 @@ function Dashboard() {
   const [activeNode, setActiveNode] = useState(null)
   const [dashboardNodes, setDashboardNodes] = useState([])
   const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const isMobile = useIsMobile()
   const sidebarRef = useRef(null)
   const profileRef = useRef(null)
@@ -82,6 +86,34 @@ function Dashboard() {
     setIsEditorExpanded(false)
     setIsAiOpen(false)
     setIsMoreOpen(false)
+  }
+
+  // Search result: switch to its workspace and open it in the editor
+  const openSearchResult = (r) => {
+    const ws = workspaces.find(w => w.id === r.workspace.id) || r.workspace
+    setActiveWorkspace(ws)
+    setActiveNode(r.kind === 'workspace'
+      ? { id: 'root-node', type: 'workspace', data: { label: ws.name } }
+      : { id: r.id, type: r.kind, parentId: r.parentId, data: { label: r.title, type: r.kind } })
+    setActiveView('graph')
+    setIsAiOpen(false)
+    setIsMoreOpen(false)
+    setIsSearchOpen(false)
+    setIsEditorOpen(true)
+  }
+
+  // Desktop right-panel handle: opens the editor beside the graph, closes any open panel
+  const toggleRightPanel = () => {
+    if (isEditorOpen || isAiOpen) {
+      setIsEditorOpen(false)
+      setIsEditorExpanded(false)
+      setIsAiOpen(false)
+      return
+    }
+    if (!activeNode) {
+      setActiveNode({ id: 'root-node', type: 'workspace', data: { label: activeWorkspace?.name || 'Workspace' } })
+    }
+    setIsEditorOpen(true)
   }
 
   // Home screen shortcuts
@@ -126,9 +158,10 @@ function Dashboard() {
 
   // Android back button (Expo shell): close the top-most layer first
   const backStateRef = useRef({})
-  backStateRef.current = { isMoreOpen, isCreateModalOpen, isSidebarOpen, isEditorOpen, isAiOpen, activeView, isMobile }
+  backStateRef.current = { isSearchOpen, isMoreOpen, isCreateModalOpen, isSidebarOpen, isEditorOpen, isAiOpen, activeView, isMobile }
   useEffect(() => setBackHandler(() => {
     const st = backStateRef.current
+    if (st.isSearchOpen) { setIsSearchOpen(false); return true }
     if (st.isMoreOpen) { setIsMoreOpen(false); return true }
     if (st.isCreateModalOpen) { setIsCreateModalOpen(false); return true }
     if (st.isSidebarOpen) { setIsSidebarOpen(false); return true }
@@ -398,6 +431,7 @@ function Dashboard() {
           onOpenWorkspaces={() => setIsSidebarOpen(true)}
           onToggleEditor={() => { setIsEditorOpen(!isEditorOpen); setIsAiOpen(false); }}
           onOpenMore={() => setIsMoreOpen(true)}
+          onOpenSearch={() => setIsSearchOpen(true)}
         />
 
         <header className={`h-20 border-b hidden md:flex items-center justify-between px-8 shrink-0 z-40 transition-all duration-500 ${theme === 'dark' ? 'bg-[#0F172A]/70 backdrop-blur-2xl border-white/10' : 'bg-white border-[#E2E8F0]'}`}>
@@ -424,19 +458,7 @@ function Dashboard() {
           </div>
 
           <div className="absolute left-1/2 -translate-x-1/2 z-50">
-            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
-              theme === 'dark' ? 'bg-white/5 border-white/5 focus-within:border-amber-500/40' : 'bg-white border-slate-300 focus-within:border-amber-500/40 focus-within:shadow-sm'
-            }`}>
-              <input 
-                type="text" 
-                placeholder="Search architecture..." 
-                className={`bg-transparent border-none outline-none text-[12px] w-64 font-bold placeholder:text-slate-500 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}
-              />
-              <div className="flex items-center gap-1 border-l pl-2 border-slate-500/20">
-                <button className="p-1 text-slate-500 hover:text-amber-500 transition-colors"><Mic size={14} /></button>
-                <button className="p-1 text-slate-500 hover:text-amber-500 transition-colors"><Search size={14} /></button>
-              </div>
-            </div>
+            <HeaderSearch theme={theme} onSelect={openSearchResult} />
           </div>
 
           <div className="flex items-center gap-6">
@@ -622,7 +644,22 @@ function Dashboard() {
                   setActiveNode={setActiveNode}
                   setIsEditorOpen={setIsEditorOpen}
                   setDashboardNodes={setDashboardNodes}
+                  activeNode={activeNode}
                 />
+
+                {/* Right panel toggle (desktop) */}
+                <button
+                  onClick={toggleRightPanel}
+                  aria-label={isEditorOpen || isAiOpen ? 'Close side panel' : 'Open editor panel'}
+                  title={isEditorOpen || isAiOpen ? 'Close side panel' : 'Open editor panel'}
+                  className={`hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-[998] h-16 w-7 items-center justify-center rounded-l-xl border border-r-0 shadow-lg transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#0F172A]/90 backdrop-blur-xl border-white/10 text-slate-400 hover:text-white'
+                      : 'bg-white border-slate-200 text-slate-500 hover:text-[#0F172A]'
+                  }`}
+                >
+                  {isEditorOpen || isAiOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+                </button>
 
                 {/* METIS AI Floating Bubble Trigger */}
                 {AI_ENABLED && (
@@ -768,6 +805,13 @@ function Dashboard() {
         isMoreOpen={isMoreOpen}
         onSelect={goToView}
         onOpenMore={() => setIsMoreOpen(true)}
+      />
+
+      <MobileSearchSheet
+        isOpen={isSearchOpen}
+        theme={theme}
+        onClose={() => setIsSearchOpen(false)}
+        onSelect={openSearchResult}
       />
 
       <MobileMoreSheet

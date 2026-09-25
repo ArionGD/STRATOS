@@ -21,7 +21,8 @@ import {
   LogOut,
   PenLine,
   Menu,
-  X
+  X,
+  Search
 } from 'lucide-react'
 
 // Phone-only chrome for the dashboard: top bar, bottom tab bar and the "More" sheet.
@@ -73,7 +74,7 @@ const MORE_ITEMS = [
 const initialsOf = (user) =>
   user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'ST'
 
-export function MobileHeader({ theme, user, activeView, activeWorkspace, isEditorOpen, onOpenWorkspaces, onToggleEditor, onOpenMore }) {
+export function MobileHeader({ theme, user, activeView, activeWorkspace, isEditorOpen, onOpenWorkspaces, onToggleEditor, onOpenMore, onOpenSearch }) {
   const dark = theme === 'dark'
   const title = activeView === 'graph' ? (activeWorkspace?.name || 'Spaces') : VIEW_TITLES[activeView]
 
@@ -103,6 +104,10 @@ export function MobileHeader({ theme, user, activeView, activeWorkspace, isEdito
           </div>
         </div>
         {activeView === 'graph' && <Menu size={14} className="text-slate-400 shrink-0" />}
+      </button>
+
+      <button onClick={onOpenSearch} aria-label="Search" className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500">
+        <Search size={18} />
       </button>
 
       {activeView === 'graph' && (

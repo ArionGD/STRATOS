@@ -61,6 +61,9 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
     setSelectedParentId('');
   }, [newNodeName, selectedParentId, nodes, nodeType, activeWorkspace]);
 
+  // Keep the dashboard's copy of the graph current (the workspace panel counts from it)
+  useEffect(() => { setDashboardNodes(nodes) }, [nodes, setDashboardNodes])
+
   // Sync with workspace (Fetch from DB)
   useEffect(() => {
     if (!activeWorkspace) return;
@@ -159,6 +162,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
         {displayMode === 'graph' && (
           <ForceGraphView
             theme={theme}
+            focusId={activeNode?.id}
             nodes={nodes}
             edges={edges}
             setActiveNode={setActiveNode}
@@ -190,6 +194,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
           <ForceGraphView
             variant="organic"
             theme={theme}
+            focusId={activeNode?.id}
             nodes={nodes}
             edges={edges}
             setActiveNode={setActiveNode}

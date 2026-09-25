@@ -1,27 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Orbit, FileText, Calendar, ChevronRight, LayoutGrid, Sparkles } from 'lucide-react'
-import { WebApi, isTauri } from '../../../services/WebApi'
-import { WorkspaceService } from '../../../services/WorkspaceService'
-import { NoteService } from '../../../services/NoteService'
+import { loadOverview } from '../../../services/OverviewService'
 
 // Phone-only home screen: a compact summary of the user's spaces and recent notes
 
 const ACCENTS = ['#3B82F6', '#8B5CF6', '#10B981', '#F43F5E', '#06B6D4', '#F97316']
 const ease = [0.22, 1, 0.36, 1]
-
-async function loadOverview() {
-  if (!isTauri) return WebApi.get('/overview')
-  // Desktop app fallback: assemble the same shape from the Tauri commands
-  const workspaces = await WorkspaceService.initialize()
-  const clusters = [], notes = []
-  for (const ws of workspaces) {
-    const data = await NoteService.getWorkspaceData(ws.id)
-    clusters.push(...data.clusters)
-    notes.push(...data.notes)
-  }
-  return { workspaces, clusters, notes, conversations: [] }
-}
 
 const greeting = () => {
   const h = new Date().getHours()

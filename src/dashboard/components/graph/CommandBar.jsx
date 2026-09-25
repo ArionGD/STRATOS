@@ -39,7 +39,7 @@ const CommandBar = ({
           }`}
         >
           <div className="w-2 h-2 shrink-0 md:shrink rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
-          <span className="min-w-0 truncate md:min-w-[auto] md:overflow-visible md:whitespace-normal text-[13px] font-black tracking-tight">{activeWorkspace?.name || 'Workspace'}</span>
+          <span className="min-w-0 truncate md:min-w-[auto] md:overflow-visible md:whitespace-nowrap text-[13px] font-black tracking-tight">{activeWorkspace?.name || 'Workspace'}</span>
           <ChevronDown size={14} className={`shrink-0 md:shrink ml-auto md:ml-0 text-slate-500 transition-transform duration-300 ${isWSDropdownOpen ? 'rotate-180' : ''}`} />
         </button>
 

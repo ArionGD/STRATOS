@@ -645,7 +645,7 @@ Please formulate a professional system engineering style response adhering to th
                 </AnimatePresence>
               </div>
 
-              <span className="text-[8px] font-black tracking-widest bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded uppercase shrink-0">Core v1.2</span>
+              <span className="max-md:hidden text-[8px] font-black tracking-widest bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded uppercase shrink-0">Core v1.2</span>
               {chatSessionType === 'persistent' && (
                 <span className="text-[8px] font-black tracking-widest bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded uppercase shrink-0 flex items-center gap-1 shadow-sm">
                   <Check size={8} /> Saved
@@ -657,7 +657,7 @@ Please formulate a professional system engineering style response adhering to th
                 </span>
               )}
               {chatSessionType === null && (
-                <span className="text-[8px] font-black tracking-widest bg-slate-500/10 text-slate-500 px-1.5 py-0.5 rounded uppercase shrink-0">
+                <span className="max-md:hidden text-[8px] font-black tracking-widest bg-slate-500/10 text-slate-500 px-1.5 py-0.5 rounded uppercase shrink-0">
                   Pending Mode
                 </span>
               )}

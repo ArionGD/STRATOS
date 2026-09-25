@@ -185,7 +185,7 @@ function computeTargets(graph) {
   return targets
 }
 
-const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, setIsEditorOpen, setDashboardNodes, variant = 'radial' }) => {
+const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, setIsEditorOpen, setDashboardNodes, variant = 'radial', focusId }) => {
   const isMobile = useIsMobile()
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
@@ -567,8 +567,14 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       s.size = { w, h, dpr }
-      // Keep the same world point in the middle when the panel beside us opens/closes
-      if (prev.w && (prev.w !== w || prev.h !== h)) {
+      const followed = s.followFocus && s.focus && s.graph.nodes.find(n => n.id === s.focus)
+      if (prev.w && followed) {
+        // A node picked from search stays centred while the panel beside us animates
+        const k = s.transform.k
+        s.tween = null
+        setTransform(zoomIdentity.translate(w / 2 - k * followed.x, h / 2 - k * followed.y).scale(k))
+      } else if (prev.w && (prev.w !== w || prev.h !== h)) {
+        // Keep the same world point in the middle when the panel beside us opens/closes
         const [cx, cy] = s.transform.invert([prev.w / 2, prev.h / 2])
         const k = s.transform.k
         setTransform(zoomIdentity.translate(w / 2 - k * cx, h / 2 - k * cy).scale(k))
@@ -591,7 +597,7 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
       })
       .on('zoom', (e) => {
         s.transform = e.transform
-        if (e.sourceEvent) { s.userMoved = true; s.tween = null }
+        if (e.sourceEvent) { s.userMoved = true; s.tween = null; s.followFocus = false }
         kick()
       })
 
@@ -608,6 +614,17 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
       s.sim?.stop()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Focus a node chosen elsewhere (search, Home): pulse it and glide to it
+  useEffect(() => {
+    if (!focusId) return
+    const node = s.graph.nodes.find(n => n.id === focusId)
+    if (!node) return
+    s.focus = focusId
+    s.userMoved = true
+    s.followFocus = true // keep it centred while the side panel slides open
+    centerOn(node)
+  }, [focusId, rfNodes]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-draw when theme changes
   useEffect(() => { kick() }, [theme]) // eslint-disable-line react-hooks/exhaustive-deps
