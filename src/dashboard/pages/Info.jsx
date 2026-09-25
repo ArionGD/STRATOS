@@ -1,101 +1,110 @@
 import React from 'react'
-import { motion } from 'framer-motion'
-import { Info, Shield, Cpu, Zap, Globe, Github, X } from 'lucide-react'
+import { Info, Shield, Cpu, Zap, Globe, Github, X, ExternalLink } from 'lucide-react'
+import { Page, Card, Grid, IconBadge, Pill, Button, tone } from '../components/ui/Page'
+
+const FEATURES = [
+  { icon: Shield, color: 'emerald', title: 'Privacy first', desc: 'Local-first architecture with end-to-end encryption for all synchronized nodes.' },
+  { icon: Cpu, color: 'amber', title: 'Hermes core', desc: 'Integrated agentic AI engine trained specifically for architectural reasoning.' },
+  { icon: Zap, color: 'rose', title: 'Tauri engine', desc: 'Fast performance with a minimal memory footprint via a Rust-based backend.' },
+  { icon: Globe, color: 'sky', title: 'Omni sync', desc: 'Bridge your data across browser, desktop and mobile environments.' }
+]
+
+const STATS = [
+  { value: '0.1s', label: 'Latency' },
+  { value: '128-bit', label: 'Encryption' },
+  { value: 'Infinite', label: 'Nodes' },
+  { value: 'v1.2.2', label: 'Protocol' }
+]
 
 const InfoPage = ({ theme, onClose }) => {
-  const isDark = theme === 'dark'
-  
+  const t = tone(theme)
+
+  const linkRow = `w-full flex items-center gap-3 min-h-[48px] px-4 md:px-5 text-left text-[13.5px] font-medium transition-colors ${t.hover}`
+
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      className={`flex-1 flex flex-col h-full relative z-10 overflow-hidden ${isDark ? 'text-white' : 'text-slate-900'}`}
+    <Page
+      theme={theme}
+      icon={Info}
+      title="About Stratos"
+      subtitle="Version, features and project links"
+      actions={
+        <Button theme={theme} icon={X} onClick={onClose} aria-label="Close" className="max-md:h-10">
+          Close
+        </Button>
+      }
     >
-      <header className={`py-2 md:py-0 md:h-24 flex items-center justify-between gap-3 px-4 md:px-10 shrink-0 border-b backdrop-blur-xl ${isDark ? 'border-white/5 bg-white/5' : 'border-slate-200 bg-white/80'}`}>
-        <div className="flex items-center gap-3 md:gap-4 min-w-0">
-          <div className="w-9 h-9 md:w-12 md:h-12 shrink-0 rounded-xl md:rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-500">
-            <Info size={24} className="w-[18px] h-[18px] md:w-6 md:h-6" />
+      {/* App card */}
+      <Card theme={theme}>
+        <div className="flex flex-col sm:flex-row gap-4 md:gap-5">
+          <div className="flex items-center gap-3.5 sm:block shrink-0">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30 flex items-center justify-center text-white font-black text-[28px] md:text-[32px]">
+              S
+            </div>
+            <div className="sm:hidden min-w-0">
+              <div className="text-[18px] font-bold tracking-tight leading-tight">Stratos</div>
+              <div className={`text-[12.5px] ${t.muted}`}>Version 1.2.2</div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-xl leading-tight md:text-2xl font-black uppercase tracking-tighter">System Intelligence</h1>
-            <p className="max-md:hidden text-[9px] max-md:leading-snug max-md:mt-0.5 md:text-[10px] text-slate-500 font-bold uppercase tracking-wider md:tracking-widest">Core Architecture & Protocol Information</p>
+          <div className="min-w-0 flex-1">
+            <div className="hidden sm:flex items-baseline gap-2.5">
+              <h2 className="text-[20px] font-bold tracking-tight leading-tight">Stratos</h2>
+              <span className={`text-[13px] font-medium ${t.muted}`}>Version 1.2.2</span>
+            </div>
+            <p className={`sm:mt-1.5 text-[13.5px] md:text-[14px] leading-relaxed ${t.body}`}>
+              Stratos is a high-performance brain-space designed for organized deep focus. Built on Tauri and React, it bridges local security and agentic AI.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Pill theme={theme} color="amber" dot="#F59E0B">Active core</Pill>
+              <Pill theme={theme} color="emerald" dot="#10B981">Secure node</Pill>
+            </div>
           </div>
         </div>
-        <button onClick={onClose} aria-label="Close Protocol" className={`w-10 h-10 shrink-0 flex items-center justify-center md:w-auto md:h-auto md:inline-block md:px-6 md:py-2 rounded-xl text-xs font-bold transition-all ${isDark ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={18} className="md:hidden" /><span className="hidden md:inline">Close Protocol</span></button>
-      </header>
+      </Card>
 
-      <div className="flex-1 overflow-y-auto p-4 pt-4 pb-6 md:p-10 space-y-5 md:space-y-12 no-scrollbar">
-        {/* Core Identity */}
-        <section className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-4 md:gap-12 py-0 md:py-10">
-          <div className="w-20 h-20 md:w-48 md:h-48 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[1.5rem] md:rounded-[3rem] shadow-2xl flex items-center justify-center text-white font-black text-4xl md:text-7xl shrink-0 rotate-3 hover:rotate-0 transition-transform duration-500">
-            S
-          </div>
-          <div className="space-y-3 md:space-y-6 max-md:text-center">
-            <h2 className="text-2xl md:text-5xl font-black tracking-tighter leading-none md:leading-none">Stratos <span className="text-blue-500">v1.2.2</span></h2>
-            <p className={`text-sm md:text-lg font-medium leading-relaxed md:leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Stratos is a high-performance architectural brain-space designed for organized deep focus. Built on top of Tauri and React, it provides a seamless bridge between local security and agentic AI intelligence.
-            </p>
-            <div className="flex gap-3 md:gap-4 max-md:justify-center max-md:flex-wrap">
-              <span className="px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[10px] font-black uppercase tracking-widest">Active Core</span>
-              <span className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest">Secure Node</span>
+      {/* Features */}
+      <Grid cols="sm:grid-cols-2 lg:grid-cols-4">
+        {FEATURES.map(f => (
+          <div key={f.title} className={`rounded-2xl border p-3.5 md:p-5 flex sm:flex-col gap-3 sm:gap-0 ${t.card}`}>
+            <IconBadge theme={theme} icon={f.icon} color={f.color} />
+            <div className="min-w-0">
+              <h3 className="sm:mt-3 text-[14px] font-semibold tracking-tight">{f.title}</h3>
+              <p className={`mt-1 text-[13px] leading-relaxed ${t.muted}`}>{f.desc}</p>
             </div>
           </div>
-        </section>
+        ))}
+      </Grid>
 
-        {/* Tech Stack Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-6 max-w-6xl mx-auto">
-          {[
-            { icon: Shield, title: "Privacy First", desc: "Local-first architecture with end-to-end encryption for all synchronized nodes.", color: "text-blue-500" },
-            { icon: Cpu, title: "Hermes Core", desc: "Integrated agentic AI engine trained specifically for architectural reasoning.", color: "text-amber-500" },
-            { icon: Zap, title: "Tauri Engine", desc: "Blazing fast performance with minimal memory footprint via Rust-based backend.", color: "text-red-500" },
-            { icon: Globe, title: "Omni Sync", desc: "Seamlessly bridge your data across browser, desktop, and mobile environments.", color: "text-emerald-500" }
-          ].map((item, idx) => (
-            <div key={idx} className={`p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border transition-all group ${isDark ? 'border-white/5 bg-white/5 hover:border-blue-500/30' : 'border-slate-200 bg-white hover:border-blue-500/30 shadow-sm hover:shadow-md'}`}>
-              <item.icon className={`${item.color} mb-2 md:mb-6 w-6 h-6 md:w-8 md:h-8 group-hover:scale-110 transition-transform`} size={32} />
-              <h3 className="text-base md:text-xl font-bold mb-1 md:mb-3">{item.title}</h3>
-              <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{item.desc}</p>
-            </div>
-          ))}
-        </section>
-
-        {/* System Stats */}
-        <section className={`max-w-4xl mx-auto p-4 md:p-10 rounded-2xl md:rounded-[3rem] border relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-blue-600/10 to-transparent border-white/5' : 'bg-blue-50 border-blue-100'}`}>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full -mr-32 max-md:mr-0 -mt-32"></div>
-          <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-10">
-            <div>
-              <div className={`text-xl md:text-3xl md:leading-9 font-black mb-0.5 md:mb-1 ${isDark ? 'text-white' : 'text-blue-600'}`}>0.1s</div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Latency</div>
-            </div>
-            <div>
-              <div className={`text-xl md:text-3xl md:leading-9 font-black mb-0.5 md:mb-1 ${isDark ? 'text-white' : 'text-blue-600'}`}>128-bit</div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Encryption</div>
-            </div>
-            <div>
-              <div className={`text-xl md:text-3xl md:leading-9 font-black mb-0.5 md:mb-1 ${isDark ? 'text-white' : 'text-blue-600'}`}>Infinite</div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nodes</div>
-            </div>
-            <div>
-              <div className={`text-xl md:text-3xl md:leading-9 font-black mb-0.5 md:mb-1 ${isDark ? 'text-white' : 'text-blue-600'}`}>v1.2.2</div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Protocol</div>
-            </div>
+      {/* Stats */}
+      <div className={`rounded-2xl border grid grid-cols-2 md:grid-cols-4 ${t.card}`}>
+        {STATS.map((s, i) => (
+          <div
+            key={s.label}
+            className={`p-4 md:p-5 min-w-0 ${t.divider} ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'max-md:border-t md:border-l' : ''}`}
+          >
+            <div className="text-[20px] md:text-[24px] font-bold tracking-tight leading-none">{s.value}</div>
+            <div className={`mt-1.5 text-[12px] font-medium ${t.muted}`}>{s.label}</div>
           </div>
-        </section>
-
-        {/* Footer Links */}
-        <section className={`flex flex-col items-center gap-3 md:gap-6 py-4 md:py-10 border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
-          <div className="flex flex-col md:flex-row max-md:items-center gap-1 md:gap-8">
-            <button className={`flex items-center gap-2 max-md:min-h-[44px] transition-colors text-sm font-bold ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-blue-600'}`}>
-              <Github size={18} /> GitHub Repository
-            </button>
-            <button className={`flex items-center gap-2 max-md:min-h-[44px] transition-colors text-sm font-bold ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-blue-600'}`}>
-              <Globe size={18} /> Official Website
-            </button>
-          </div>
-          <p className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] max-md:text-center">Arion Studios © 2026 • All Rights Reserved</p>
-        </section>
+        ))}
       </div>
-    </motion.div>
+
+      {/* Links */}
+      <Card theme={theme} title="Links" padded={false}>
+        <div className={`divide-y ${t.dark ? 'divide-white/10' : 'divide-slate-100'}`}>
+          <button className={linkRow}>
+            <Github size={17} className={t.muted} />
+            <span className="flex-1">GitHub repository</span>
+            <ExternalLink size={14} className={t.faint} />
+          </button>
+          <button className={`${linkRow} rounded-b-2xl`}>
+            <Globe size={17} className={t.muted} />
+            <span className="flex-1">Official website</span>
+            <ExternalLink size={14} className={t.faint} />
+          </button>
+        </div>
+      </Card>
+
+      <p className={`text-center text-[12px] pb-2 ${t.faint}`}>Arion Studios © 2026 · All rights reserved</p>
+    </Page>
   )
 }
 

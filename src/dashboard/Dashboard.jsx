@@ -416,8 +416,8 @@ function Dashboard() {
       <main className="flex-1 flex flex-col min-w-0 relative">
         {theme === 'dark' && (
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            <div className="absolute top-[-20%] right-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-blue-600/20 rounded-full blur-[140px]"></div>
-            <div className="absolute bottom-[-20%] left-[-10%] w-[260px] h-[260px] md:w-[500px] md:h-[500px] bg-blue-900/30 rounded-full blur-[120px]"></div>
+            <div className="absolute top-[-20%] right-0 md:right-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-blue-600/20 rounded-full blur-[140px]"></div>
+            <div className="absolute bottom-[-20%] left-0 md:left-[-10%] w-[260px] h-[260px] md:w-[500px] md:h-[500px] bg-blue-900/30 rounded-full blur-[120px]"></div>
             <div className="absolute top-[20%] left-[30%] w-[160px] h-[160px] md:w-[300px] md:h-[300px] bg-indigo-600/10 rounded-full blur-[100px]"></div>
           </div>
         )}

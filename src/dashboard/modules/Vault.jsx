@@ -1,124 +1,188 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { Wallet, Shield, Lock, Key, Fingerprint, Eye, EyeOff, MoreVertical } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import {
+  Wallet,
+  ShieldCheck,
+  Lock,
+  KeyRound,
+  Fingerprint,
+  Cloud,
+  Eye,
+  EyeOff,
+  MoreVertical,
+  Download,
+  UploadCloud,
+  FileJson,
+  FileKey,
+  FileLock2,
+  Archive
+} from 'lucide-react'
+import { Page, Card, Grid, IconBadge, Pill, Button, tone } from '../components/ui/Page'
+import { CLUSTER_COLORS } from '../components/graph/palette'
+
+const ACCESS = [
+  { label: 'Master key rotation', status: 'Enabled', icon: KeyRound },
+  { label: 'Biometric access', status: 'Active', icon: Fingerprint },
+  { label: 'Cloud handshake', status: 'Optimal', icon: Cloud }
+]
+
+const FILES = [
+  { name: 'Core_System_Architecture.json', size: '1.2 MB', date: '2026-05-14' },
+  { name: 'Financial_Forensics_Silver.vault', size: '4.8 MB', date: '2026-05-12' },
+  { name: 'Biometric_Master_Identity.key', size: '256 KB', date: '2026-05-10' },
+  { name: 'User_Preference_Matrix.enc', size: '128 KB', date: '2026-05-08' }
+]
+
+// File type -> icon + accent
+const fileMeta = (name) => {
+  const ext = name.split('.').pop()
+  if (ext === 'json') return { icon: FileJson, color: 'sky' }
+  if (ext === 'key') return { icon: FileKey, color: 'amber' }
+  if (ext === 'vault') return { icon: Archive, color: 'emerald' }
+  return { icon: FileLock2, color: 'violet' }
+}
+
+const fmtDate = (iso) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+// On phones the page bar would hold only "Lock all", so it moves into the status card instead
+const useDesktop = () => {
+  const query = '(min-width: 768px)'
+  const [desktop, setDesktop] = useState(() => typeof window === 'undefined' || window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setDesktop(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return desktop
+}
 
 const Vault = ({ theme }) => {
-  // phone-only light-theme surfaces (desktop unchanged)
-  const lt = theme !== 'dark'
-  const card = lt ? 'max-md:bg-white max-md:border-slate-200 max-md:shadow-sm' : ''
-  const tile = lt ? 'max-md:bg-slate-50 max-md:border-slate-200' : ''
-  const line = lt ? 'max-md:border-slate-200' : ''
+  const t = tone(theme)
+  const [hidden, setHidden] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const desktop = useDesktop()
+  const green = t.dark ? 'text-emerald-300' : 'text-emerald-600'
+
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex-1 max-md:min-w-0 flex flex-col h-full overflow-y-auto md:overflow-hidden no-scrollbar"
+    <Page
+      theme={theme}
+      icon={Wallet}
+      title="Vault"
+      subtitle="Encrypted storage for your most sensitive files"
+      actions={desktop ? <Button theme={theme} variant="primary" icon={Lock}>Lock all</Button> : null}
+      maxWidth="max-w-6xl"
     >
-      <header className={`h-auto md:h-24 border-b border-white/5 flex flex-row items-center justify-between gap-3 md:gap-0 px-4 py-2.5 md:py-0 md:px-10 shrink-0 ${line}`}>
-        <div className="flex items-center gap-3 md:gap-4 max-md:min-w-0">
-          <div className="w-8 h-8 md:w-12 md:h-12 max-md:shrink-0 rounded-lg md:rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-500">
-            <Wallet className="w-4 h-4 md:w-6 md:h-6" />
-          </div>
-          <div className="max-md:min-w-0">
-            <h1 className="text-xl max-md:leading-tight max-md:truncate md:text-2xl font-black uppercase tracking-tight md:tracking-tighter">Secure <span className="text-indigo-500">Vault</span></h1>
-            <p className="max-md:hidden text-[10px] text-slate-500 font-bold uppercase tracking-widest">End-to-end encrypted architectural storage</p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between md:justify-start gap-3 md:gap-4 max-md:shrink-0">
-          <div className="max-md:hidden px-3 md:px-4 py-2 max-md:min-h-[40px] bg-green-500/10 border border-green-500/20 rounded-full flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-[10px] font-black text-green-500 uppercase max-md:whitespace-nowrap tracking-wider md:tracking-widest">Quantum Shield Active</span>
-          </div>
-          <button className="px-4 md:px-6 py-2 md:py-2.5 max-md:min-h-[40px] max-md:text-sm max-md:text-white max-md:shrink-0 bg-indigo-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">
-            <Lock className="w-4 h-4 md:w-[18px] md:h-[18px]" /> Lock All
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-none md:flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-6 p-4 pt-3 md:p-10 overflow-visible md:overflow-hidden">
-        {/* Security Overview */}
-        <div className="md:col-span-4 space-y-3 md:space-y-6">
-          <div className={`p-5 md:p-8 rounded-2xl md:rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl text-center space-y-4 md:space-y-6 py-5 md:py-12 ${card}`}>
-            <div className="w-16 h-16 md:w-24 md:h-24 bg-indigo-500/10 rounded-[1.4rem] md:rounded-[2rem] flex items-center justify-center mx-auto text-indigo-500 relative">
-              <Shield className="w-10 h-10 md:w-12 md:h-12" />
-              <div className="absolute -bottom-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-xl border-4 border-[#0F172A] flex items-center justify-center text-white">
-                <Fingerprint className="w-4 h-4 md:w-5 md:h-5" />
+      <Grid cols="lg:grid-cols-3" className="items-start">
+        {/* Left column: status + access */}
+        <div className="space-y-3 md:space-y-4 min-w-0">
+          <Card theme={theme}>
+            <div className="flex items-start gap-3">
+              <span className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center ${t.dark ? 'bg-emerald-400/15 text-emerald-300' : 'bg-emerald-50 text-emerald-600'}`}>
+                <ShieldCheck size={24} />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[16px] font-bold tracking-tight">Protected</h2>
+                  <Pill theme={theme} color="emerald" dot={CLUSTER_COLORS[0]}>Shield active</Pill>
+                </div>
+                <p className={`mt-1 text-[13px] leading-snug ${t.muted}`}>Everything in the vault is encrypted with AES-256-GCM before it leaves your device.</p>
               </div>
             </div>
-            <div className="space-y-1 md:space-y-2">
-              <h2 className="text-lg md:text-2xl font-black tracking-tight">System Integrity</h2>
-              <p className="text-[13px] md:text-xs text-slate-500 font-medium px-2 md:px-10">Your architectural nodes are protected with AES-256-GCM encryption.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2.5 md:gap-4 px-0 md:px-4 pt-0 md:pt-4">
-              <div className={`p-3 md:p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
-                <div className="text-lg font-black">2.4k</div>
-                <div className="text-[10px] md:text-[8px] font-black text-slate-500 uppercase">Encrypted Nodes</div>
+            <div className="grid grid-cols-2 gap-2 md:gap-3 mt-4">
+              <div className={`rounded-xl border px-3 py-2.5 ${t.inset}`}>
+                <div className="text-[18px] font-bold leading-tight tabular-nums">2.4k</div>
+                <div className={`text-[12px] ${t.muted}`}>Encrypted nodes</div>
               </div>
-              <div className={`p-3 md:p-4 rounded-2xl bg-white/5 border border-white/10 ${tile}`}>
-                <div className="text-lg font-black">Zero</div>
-                <div className="text-[10px] md:text-[8px] font-black text-slate-500 uppercase">Breach Attempts</div>
+              <div className={`rounded-xl border px-3 py-2.5 ${t.inset}`}>
+                <div className="text-[18px] font-bold leading-tight tabular-nums">0</div>
+                <div className={`text-[12px] ${t.muted}`}>Breach attempts</div>
               </div>
             </div>
-          </div>
+            {!desktop && (
+              <Button theme={theme} variant="primary" icon={Lock} className="w-full h-11 mt-3">Lock all</Button>
+            )}
+          </Card>
 
-          <div className={`p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-white/5 bg-white/2 backdrop-blur-xl space-y-3 md:space-y-6 ${card}`}>
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-              <Key size={16} /> Access Protocols
-            </h3>
-            <div className="space-y-2 md:space-y-4">
-              {[
-                { label: 'Master Key Rotation', status: 'Enabled' },
-                { label: 'Biometric Access', status: 'Active' },
-                { label: 'Cloud Handshake', status: 'Optimal' },
-              ].map((p, idx) => (
-                <div key={idx} className={`flex justify-between items-center py-2 border-b border-white/5 ${line}`}>
-                  <span className={`text-[13px] md:text-xs font-bold text-slate-400 ${lt ? 'max-md:text-slate-600' : ''}`}>{p.label}</span>
-                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{p.status}</span>
+          <Card theme={theme} title="Access" padded={false}>
+            <dl className={`divide-y ${t.dark ? 'divide-white/10' : 'divide-slate-100'}`}>
+              {ACCESS.map((p) => (
+                <div key={p.label} className="flex items-center gap-3 px-4 md:px-5 min-h-[48px] py-2">
+                  <p.icon size={16} className={`shrink-0 ${t.faint}`} />
+                  <dt className={`flex-1 min-w-0 truncate text-[13.5px] ${t.body}`}>{p.label}</dt>
+                  <dd className={`shrink-0 flex items-center gap-1.5 text-[13px] font-semibold ${green}`}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: CLUSTER_COLORS[0] }} />
+                    {p.status}
+                  </dd>
                 </div>
               ))}
-            </div>
-          </div>
+            </dl>
+          </Card>
         </div>
 
-        {/* Vault Files */}
-        <div className={`md:col-span-8 rounded-2xl md:rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl p-4 md:p-8 overflow-hidden flex flex-col ${card}`}>
-          <div className="flex items-center justify-between gap-2 mb-3 md:mb-8">
-            <h2 className="text-base md:text-xl font-black uppercase tracking-wider md:tracking-widest max-md:min-w-0">Confidential Assets</h2>
-            <div className="flex gap-1 md:gap-2 max-md:shrink-0">
-              <button className="p-2.5 md:p-2 hover:bg-white/5 rounded-lg text-slate-500 transition-all"><Eye size={20} /></button>
-              <button className={`px-3 md:px-4 py-2 max-md:min-h-[40px] bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all ${tile}`}>Export Archive</button>
+        {/* Files */}
+        <Card
+          theme={theme}
+          className="lg:col-span-2 min-w-0"
+          padded={false}
+          title="Files"
+          subtitle={`${FILES.length} encrypted files`}
+          action={
+            <div className="flex items-center gap-1.5">
+              <Button
+                theme={theme}
+                icon={hidden ? EyeOff : Eye}
+                aria-label={hidden ? 'Show file names' : 'Hide file names'}
+                title={hidden ? 'Show file names' : 'Hide file names'}
+                onClick={() => setHidden(h => !h)}
+                className="w-10 h-10 md:w-9 md:h-9 !px-0"
+              />
+              <Button theme={theme} icon={Download} className="max-md:h-10">Export</Button>
+            </div>
+          }
+        >
+          <ul className={`divide-y ${t.dark ? 'divide-white/10' : 'divide-slate-100'}`}>
+            {FILES.map((f) => {
+              const meta = fileMeta(f.name)
+              return (
+                <li key={f.name} className={`flex items-center gap-3 pl-4 md:pl-5 pr-2 md:pr-3 py-2.5 transition-colors ${t.hover}`}>
+                  <IconBadge theme={theme} icon={meta.icon} color={meta.color} />
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-[13.5px] font-medium truncate transition-[filter] ${hidden ? 'blur-[5px] select-none' : ''}`}>{f.name}</div>
+                    <div className={`text-[12px] tabular-nums ${t.muted}`}>{f.size} · {fmtDate(f.date)}</div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`More actions for ${f.name}`}
+                    className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-colors ${t.faint} ${t.dark ? 'hover:bg-white/10 hover:text-white' : 'hover:bg-slate-100 hover:text-slate-700'}`}
+                  >
+                    <MoreVertical size={18} />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+
+          <div className="p-4 md:p-5 pt-2 md:pt-2">
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => { e.preventDefault(); setDragging(false) }}
+              className={`rounded-xl border-2 border-dashed px-4 py-6 md:py-8 flex flex-col items-center text-center transition-colors ${
+                dragging
+                  ? 'border-amber-500 bg-amber-500/5'
+                  : t.dark ? 'border-white/10' : 'border-slate-200'
+              }`}
+            >
+              <IconBadge theme={theme} icon={UploadCloud} color="amber" />
+              <div className="mt-3 text-[13.5px] font-semibold">Drop files to encrypt and store them</div>
+              <div className={`mt-0.5 text-[12px] ${t.muted}`}>Any file type is supported</div>
+              <Button theme={theme} className="mt-3 max-md:h-10">Browse files</Button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 md:space-y-4">
-            {[
-              { name: 'Core_System_Architecture.json', size: '1.2 MB', date: '2026-05-14' },
-              { name: 'Financial_Forensics_Silver.vault', size: '4.8 MB', date: '2026-05-12' },
-              { name: 'Biometric_Master_Identity.key', size: '256 KB', date: '2026-05-10' },
-              { name: 'User_Preference_Matrix.enc', size: '128 KB', date: '2026-05-08' },
-            ].map((f, idx) => (
-              <div key={idx} className={`p-3 md:p-5 rounded-2xl border border-white/5 bg-white/2 hover:bg-white/5 transition-all flex items-center justify-between gap-2 md:gap-0 group ${tile}`}>
-                <div className="flex items-center gap-3 md:gap-4 max-md:min-w-0">
-                  <div className={`w-10 h-10 max-md:shrink-0 rounded-xl bg-white/5 flex items-center justify-center text-indigo-500 ${lt ? 'max-md:bg-indigo-50' : ''}`}>
-                    <Lock size={18} />
-                  </div>
-                  <div className="max-md:min-w-0">
-                    <div className="font-bold text-sm mb-0.5 max-md:truncate">{f.name}</div>
-                    <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wider md:tracking-widest">{f.size} • Last Modified {f.date}</div>
-                  </div>
-                </div>
-                <button className="p-2.5 md:p-2 -mr-1 md:mr-0 max-md:shrink-0 text-slate-700 hover:text-white transition-colors"><MoreVertical size={20} /></button>
-              </div>
-            ))}
-            {/* Empty State Mock */}
-            <div className={`mt-4 md:mt-10 p-5 md:p-10 rounded-2xl md:rounded-[2.5rem] border border-dashed border-white/10 text-center space-y-2 ${lt ? 'max-md:border-slate-300' : ''}`}>
-              <div className="text-sm font-bold text-slate-600">Drop files here to encrypt and store them in the vault.</div>
-              <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Supports all binary formats</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
+        </Card>
+      </Grid>
+    </Page>
   )
 }
 
