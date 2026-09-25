@@ -15,8 +15,9 @@ import useIsMobile from '../../../../hooks/useIsMobile'
  */
 
 const ROOT_COLOR = '#F59E0B'
-const LOOSE_NOTE_COLOR = '#94A3B8'
-const CLUSTER_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F43F5E', '#06B6D4', '#F97316', '#EAB308', '#EC4899']
+const LOOSE_NOTE_COLOR = '#FBBF24' // notes directly under the workspace: lighter amber
+// Vivid, eye-catching cluster colours (the workspace itself is amber)
+const CLUSTER_COLORS = ['#10B981', '#F43F5E', '#8B5CF6', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6', '#84CC16']
 
 const BASE_RADIUS = { workspace: 20, cluster: 13, note: 8 }
 // Equal-angle radial layout: distance from a parent to its children
@@ -37,57 +38,43 @@ const ORGANIC = {
 
 const FADED = 0.14
 
-// ---------------------------------------------------------------- glass-ball sprites
-// Each ball (glow + shaded sphere + highlight) is drawn once per colour and
-// on-screen size into a small canvas, then stamped with drawImage. That keeps
-// the look of a blurred glow without paying for shadowBlur on every frame.
+// ---------------------------------------------------------------- node sprites
+// Each node (solid dot + soft shadow in its own colour) is drawn once per colour
+// and on-screen size into a small canvas, then stamped with drawImage. That keeps
+// a blurred shadow without paying for shadowBlur on every frame.
 const hexToRgb = (hex) => {
   const v = parseInt(hex.slice(1), 16)
   return [(v >> 16) & 255, (v >> 8) & 255, v & 255]
 }
-const mix = ([r, g, b], [r2, g2, b2], t) => `rgb(${Math.round(r + (r2 - r) * t)},${Math.round(g + (g2 - g) * t)},${Math.round(b + (b2 - b) * t)})`
 const spriteCache = new Map()
 
-function ballSprite(color, radiusPx) {
+function ballSprite(color, radiusPx, ringColor) {
   const R = Math.max(4, Math.round(radiusPx / 2) * 2) // bucket sizes so zooming reuses sprites
-  const key = `${color}|${R}`
+  const key = `${color}|${R}|${ringColor}`
   let sprite = spriteCache.get(key)
   if (sprite) return sprite
   if (spriteCache.size > 240) spriteCache.clear()
 
-  const pad = Math.ceil(R * 1.1) // room for the glow
+  const pad = Math.ceil(R * 0.8) // room for the shadow
   const size = (R + pad) * 2
   const c = document.createElement('canvas')
   c.width = c.height = size
   const g = c.getContext('2d')
   const cx = size / 2, cy = size / 2
-  const rgb = hexToRgb(color)
+  const [cr, cg, cb] = hexToRgb(color)
 
-  // Coloured glow, a little below the ball like a soft cast shadow
-  const glow = g.createRadialGradient(cx, cy + R * 0.3, R * 0.5, cx, cy + R * 0.3, R + pad)
-  glow.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.42)`)
-  glow.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`)
-  g.fillStyle = glow
-  g.fillRect(0, 0, size, size)
-
-  // Sphere shading: lit from the top-left
-  const body = g.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R)
-  body.addColorStop(0, mix(rgb, [255, 255, 255], 0.55))
-  body.addColorStop(0.5, color)
-  body.addColorStop(1, mix(rgb, [15, 23, 42], 0.35))
-  g.fillStyle = body
+  // Soft shadow in the node's colour, dropped slightly below it
+  g.shadowColor = `rgba(${cr},${cg},${cb},0.45)`
+  g.shadowBlur = R * 0.7
+  g.shadowOffsetY = R * 0.22
+  g.fillStyle = color
   g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill()
 
-  // Glass rim and specular highlight
-  g.strokeStyle = 'rgba(255,255,255,0.55)'
-  g.lineWidth = Math.max(1, R * 0.08)
+  // Thin ring in the background colour keeps overlapping dots separated
+  g.shadowColor = 'transparent'
+  g.strokeStyle = ringColor
+  g.lineWidth = Math.max(1, R * 0.12)
   g.beginPath(); g.arc(cx, cy, R - g.lineWidth / 2, 0, Math.PI * 2); g.stroke()
-  const hx = cx - R * 0.32, hy = cy - R * 0.42
-  const spec = g.createRadialGradient(hx, hy, 0, hx, hy, R * 0.5)
-  spec.addColorStop(0, 'rgba(255,255,255,0.9)')
-  spec.addColorStop(1, 'rgba(255,255,255,0)')
-  g.fillStyle = spec
-  g.beginPath(); g.ellipse(hx, hy, R * 0.48, R * 0.3, -0.5, 0, Math.PI * 2); g.fill()
 
   sprite = { canvas: c, R, size }
   spriteCache.set(key, sprite)
@@ -434,8 +421,8 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
         ctx.strokeStyle = T.ring
         ctx.stroke()
       } else {
-        // Glass ball: cached sprite sized to the current on-screen radius
-        const sp = ballSprite(fill, r * k * dpr)
+        // Cached sprite (dot + soft coloured shadow) at the on-screen radius
+        const sp = ballSprite(fill, r * k * dpr, T.ring)
         const worldPerPx = r / sp.R
         const drawn = sp.size * worldPerPx
         ctx.drawImage(sp.canvas, n.x - drawn / 2, n.y - drawn / 2, drawn, drawn)
