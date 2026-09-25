@@ -19,12 +19,13 @@ const LOOSE_NOTE_COLOR = '#94A3B8'
 const CLUSTER_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F43F5E', '#06B6D4', '#F97316', '#EAB308', '#EC4899']
 
 const BASE_RADIUS = { workspace: 20, cluster: 13, note: 8 }
-const LINK_DISTANCE = { workspace: 115, cluster: 72 }
-const CHARGE = { workspace: -360, cluster: -240, note: -130 }
+// Equal-angle radial layout: distance from a parent to its children
+const ROOT_RADIUS = 130
+const BRANCH_RADIUS = 92
 
 const THEMES = {
-  light: { label: '#334155', halo: 'rgba(248,250,252,0.92)', edge: 'rgba(100,116,139,0.30)', grid: 'rgba(15,23,42,0.07)', ring: '#FFFFFF' },
-  dark: { label: '#E2E8F0', halo: 'rgba(15,23,42,0.92)', edge: 'rgba(148,163,184,0.26)', grid: 'rgba(255,255,255,0.06)', ring: '#0F172A' }
+  light: { label: '#334155', halo: 'rgba(248,250,252,0.92)', edge: 'rgba(100,116,139,0.30)', grid: 'rgba(100,116,139,0.38)', ring: '#FFFFFF' },
+  dark: { label: '#E2E8F0', halo: 'rgba(15,23,42,0.92)', edge: 'rgba(148,163,184,0.26)', grid: 'rgba(148,163,184,0.24)', ring: '#0F172A' }
 }
 
 const FADED = 0.14
@@ -80,6 +81,55 @@ function buildGraph(rfNodes, rfEdges) {
   links.forEach(l => { adjacency.get(l.source).add(l.target); adjacency.get(l.target).add(l.source) })
 
   return { nodes, links, adjacency, byId }
+}
+
+/**
+ * Target position for every node, spreading children at equal angles:
+ * - around the workspace root: 1 child straight down, 2 left and right,
+ *   3+ evenly around 360 degrees
+ * - around any other node the link back to its parent counts as one slot, so
+ *   1 child continues straight outward, 2 fan out at +/-60 degrees, and so on
+ */
+function computeTargets(graph) {
+  const targets = new Map()
+  const children = new Map(graph.nodes.map(n => [n.id, []]))
+  graph.links.forEach(l => {
+    const src = typeof l.source === 'object' ? l.source.id : l.source
+    const tgt = typeof l.target === 'object' ? l.target.id : l.target
+    children.get(src)?.push(tgt)
+  })
+  const root = graph.nodes.find(n => n.type === 'workspace') || graph.nodes[0]
+  if (!root) return targets
+
+  const place = (id, x, y, incoming, depth) => {
+    targets.set(id, { x, y })
+    const kids = (children.get(id) || []).filter(k => !targets.has(k))
+    const n = kids.length
+    if (!n) return
+    let angles
+    if (incoming === null) {
+      angles = n === 1 ? [Math.PI / 2]
+        : n === 2 ? [Math.PI, 0]
+        : kids.map((_, i) => Math.PI / 2 + (i * 2 * Math.PI) / n)
+    } else {
+      const back = incoming + Math.PI
+      angles = kids.map((_, i) => back + ((i + 1) * 2 * Math.PI) / (n + 1))
+    }
+    const radius = incoming === null
+      ? Math.max(ROOT_RADIUS, n * 26)
+      : (BRANCH_RADIUS + Math.max(0, n - 3) * 12) * Math.pow(0.9, depth - 1)
+    kids.forEach((k, i) => {
+      place(k, x + Math.cos(angles[i]) * radius, y + Math.sin(angles[i]) * radius, angles[i], depth + 1)
+    })
+  }
+  place(root.id, 0, 0, null, 0)
+
+  // Anything not reachable from the root sits in a row underneath
+  let spare = 0
+  graph.nodes.forEach(n => {
+    if (!targets.has(n.id)) targets.set(n.id, { x: -120 + (spare++ % 5) * 60, y: 260 + Math.floor(spare / 5) * 60 })
+  })
+  return targets
 }
 
 const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, setIsEditorOpen, setDashboardNodes }) => {
@@ -219,16 +269,21 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
 
-    // Dot grid, moves with the camera
-    const gap = 22 * k
-    if (gap >= 9) {
-      ctx.fillStyle = T.grid
-      const ox = ((tx % gap) + gap) % gap, oy = ((ty % gap) + gap) % gap
-      const dot = Math.max(0.8, Math.min(1.6, k))
-      for (let gx = ox; gx < w; gx += gap) {
-        for (let gy = oy; gy < h; gy += gap) ctx.fillRect(gx, gy, dot, dot)
+    // Dotted grid that pans and zooms with the camera; spacing doubles when
+    // zoomed far out so the dots never turn into noise
+    let gap = 20 * k
+    while (gap < 14) gap *= 2
+    ctx.fillStyle = T.grid
+    ctx.beginPath()
+    const ox = ((tx % gap) + gap) % gap, oy = ((ty % gap) + gap) % gap
+    const dot = Math.max(0.9, Math.min(1.5, 1.1 * k))
+    for (let gx = ox; gx < w; gx += gap) {
+      for (let gy = oy; gy < h; gy += gap) {
+        ctx.moveTo(gx + dot, gy)
+        ctx.arc(gx, gy, dot, 0, Math.PI * 2)
       }
     }
+    ctx.fill()
 
     ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * tx, dpr * ty)
 
@@ -367,15 +422,18 @@ const ForceGraphView = ({ theme, nodes: rfNodes, edges: rfEdges, setActiveNode, 
     s.graph = graph
     if (s.focus && !ids.has(s.focus)) s.focus = null
 
+    const targets = computeTargets(graph)
+    graph.nodes.forEach(n => { n.tx = targets.get(n.id).x; n.ty = targets.get(n.id).y })
+
     s.sim?.stop()
     s.sim = forceSimulation(graph.nodes)
-      .force('link', forceLink(graph.links).id(d => d.id)
-        .distance(l => LINK_DISTANCE[l.source.type] || 64)
-        .strength(0.55))
-      .force('charge', forceManyBody().strength(d => CHARGE[d.type]).distanceMax(700))
-      .force('collide', forceCollide(d => d.r + 12).strength(0.9))
-      .force('x', forceX(0).strength(0.035))
-      .force('y', forceY(0).strength(0.035))
+      // Each node springs toward its equal-angle slot; links and a light
+      // repulsion keep the motion elastic without bending the angles
+      .force('x', forceX(d => d.tx).strength(0.28))
+      .force('y', forceY(d => d.ty).strength(0.28))
+      .force('link', forceLink(graph.links).id(d => d.id).distance(l => Math.hypot(l.target.tx - l.source.tx, l.target.ty - l.source.ty) || 80).strength(0.08))
+      .force('charge', forceManyBody().strength(-40).distanceMax(160))
+      .force('collide', forceCollide(d => d.r + 10).strength(0.7))
       .velocityDecay(0.32)
       .alphaDecay(0.03)
       .alphaMin(0.004)
