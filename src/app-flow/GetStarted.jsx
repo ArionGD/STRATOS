@@ -48,7 +48,7 @@ export default function GetStarted() {
       <motion.div
         initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.35, duration: 0.55, ease }}
-        className="relative px-5 pb-[calc(20px+env(safe-area-inset-bottom))] space-y-3"
+        className="relative px-5 pb-[calc(20px+var(--safe-bottom))] space-y-3"
       >
         <motion.button
           whileTap={{ scale: 0.97 }}

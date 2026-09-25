@@ -38,7 +38,7 @@ export default function Welcome() {
         transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      <div className="relative flex-1 overflow-y-auto px-5 pt-[calc(28px+env(safe-area-inset-top))] pb-6">
+      <div className="relative flex-1 overflow-y-auto px-5 pt-[calc(28px+var(--safe-top))] pb-6">
         {/* Brand */}
         <motion.div
           initial={{ scale: 0.6, opacity: 0 }}
@@ -98,7 +98,7 @@ export default function Welcome() {
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.5, ease }}
-        className="relative px-5 pt-3 pb-[calc(16px+env(safe-area-inset-bottom))] bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC] to-[#F8FAFC]/0"
+        className="relative px-5 pt-3 pb-[calc(16px+var(--safe-bottom))] bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC] to-[#F8FAFC]/0"
       >
         <motion.button
           whileTap={{ scale: 0.97 }}

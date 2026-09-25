@@ -26,7 +26,7 @@ const CreateWorkspaceModal = ({ isOpen, onClose, onCreate, theme }) => {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className={`relative w-full max-w-[500px] rounded-t-[2rem] rounded-b-none md:rounded-3xl px-5 pt-7 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:p-10 shadow-2xl max-h-[92dvh] md:max-h-none overflow-y-auto md:overflow-hidden ${
+          className={`relative w-full max-w-[500px] rounded-t-[2rem] rounded-b-none md:rounded-3xl px-5 pt-7 pb-[max(1.25rem,var(--safe-bottom))] md:p-10 shadow-2xl max-h-[92dvh] md:max-h-none overflow-y-auto md:overflow-hidden ${
             theme === 'dark' 
               ? 'bg-[#121417] text-white border border-b-0 md:border-b border-white/5' 
               : 'bg-white text-slate-900 border border-b-0 md:border-b border-slate-100'

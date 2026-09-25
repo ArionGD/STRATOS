@@ -173,7 +173,7 @@ export default function Intro() {
         initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }}
       />
 
-      <div className="relative flex items-center justify-between px-5 pt-[calc(14px+env(safe-area-inset-top))] h-[calc(58px+env(safe-area-inset-top))]">
+      <div className="relative flex items-center justify-between px-5 pt-[calc(14px+var(--safe-top))] h-[calc(58px+var(--safe-top))]">
         <span className="text-[12px] font-black tracking-[0.2em] text-slate-400">{index + 1} / {SLIDES.length}</span>
         {!last && (
           <button onClick={finish} className="h-10 px-3 -mr-3 text-[14px] font-bold text-slate-500">Skip</button>
@@ -212,7 +212,7 @@ export default function Intro() {
         </motion.div>
       </AnimatePresence>
 
-      <div className="relative px-5 pt-2 pb-[calc(20px+env(safe-area-inset-bottom))]">
+      <div className="relative px-5 pt-2 pb-[calc(20px+var(--safe-bottom))]">
         <div className="flex justify-center gap-2 mb-5" role="tablist" aria-label="Intro slides">
           {SLIDES.map((s, i) => (
             <button

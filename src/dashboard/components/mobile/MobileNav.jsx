@@ -79,10 +79,11 @@ export function MobileHeader({ theme, user, activeView, activeWorkspace, isEdito
 
   return (
     <header
-      className={`md:hidden shrink-0 z-40 border-b flex items-center gap-2 px-3 h-14 ${
+      className={`md:hidden shrink-0 z-40 border-b flex items-center gap-2 px-3 ${
         dark ? 'bg-[#0F172A]/90 backdrop-blur-2xl border-white/10' : 'bg-white border-[#E2E8F0]'
       }`}
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      // The bar grows by the inset instead of squeezing its 56px of content
+      style={{ paddingTop: 'var(--safe-top)', height: 'calc(56px + var(--safe-top))' }}
     >
       <button
         onClick={onOpenWorkspaces}
@@ -146,7 +147,7 @@ export function MobileTabBar({ theme, activeView, isMoreOpen, onSelect, onOpenMo
       className={`md:hidden fixed bottom-0 inset-x-0 z-[70] border-t ${
         dark ? 'bg-[#0A0F1C]/95 backdrop-blur-2xl border-white/10' : 'bg-white/95 backdrop-blur-xl border-[#E2E8F0]'
       }`}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
       <div className="flex h-16">
         {TABS.map(({ view, label, icon: Icon }) => {
@@ -189,7 +190,7 @@ export function MobileMoreSheet({ isOpen, theme, user, activeView, onClose, onSe
             className={`md:hidden fixed inset-x-0 bottom-0 z-[95] rounded-t-[28px] border-t max-h-[85dvh] overflow-y-auto ${
               dark ? 'bg-[#0F172A] border-white/10 text-white' : 'bg-white border-slate-200 text-[#0F172A]'
             }`}
-            style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}
+            style={{ paddingBottom: 'calc(16px + var(--safe-bottom))' }}
           >
             <div className="flex justify-center pt-3 pb-1">
               <div className={`w-10 h-1.5 rounded-full ${dark ? 'bg-white/15' : 'bg-slate-200'}`} />

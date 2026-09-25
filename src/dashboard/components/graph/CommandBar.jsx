@@ -29,7 +29,7 @@ const CommandBar = ({
       theme === 'dark' ? 'bg-[#0F172A]/80 backdrop-blur-2xl border-white/10' : 'bg-white/90 backdrop-blur-md border-slate-200'
     }`}>
       {/* Workspace Switcher */}
-      <div className="relative overflow-visible flex-1 min-w-0 md:flex-initial md:min-w-[auto]">
+      <div className="relative overflow-visible flex-1 min-w-0 md:flex-initial md:min-w-[auto] max-md:hidden">
         <button 
           onClick={() => setIsWSDropdownOpen(!isWSDropdownOpen)}
           aria-label="Switch workspace"
@@ -137,7 +137,7 @@ const CommandBar = ({
       )}
 
       {/* Create Node Action */}
-      <div className="flex items-center shrink-0 md:shrink">
+      <div className="flex items-center shrink-0 md:shrink max-md:flex-1 max-md:min-w-0">
         <AnimatePresence>
           {isAddingNode && !isMobile && (
             <motion.div 
@@ -204,7 +204,7 @@ const CommandBar = ({
         <div className={`w-px h-6 mx-1 md:mx-2 ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`}></div>
 
         {/* Display Mode Switcher */}
-        <div className={`flex items-center p-0.5 md:p-1 rounded-xl border ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+        <div className={`flex items-center p-0.5 md:p-1 rounded-xl border max-md:flex-1 max-md:justify-between ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
           {[
             { id: 'graph', label: 'Graph', icon: Orbit },
             { id: 'chart', label: 'Chart', icon: GitGraph },
@@ -217,13 +217,13 @@ const CommandBar = ({
               onClick={() => setDisplayMode(mode.id)}
               aria-label={`${mode.label} view`}
               aria-pressed={displayMode === mode.id}
-              className={`w-10 h-10 justify-center md:justify-start md:w-auto md:h-auto flex items-center gap-2 md:px-3 md:py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
+              className={`w-10 h-10 max-md:w-auto max-md:flex-1 justify-center md:justify-start md:w-auto md:h-auto flex items-center gap-2 md:px-3 md:py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
                 displayMode === mode.id 
                   ? 'bg-amber-500 text-white shadow-lg' 
                   : (theme === 'dark' ? 'text-slate-500 hover:text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:text-[#0F172A] hover:bg-white/50')
               }`}
             >
-              <mode.icon size={13} />
+              <mode.icon size={13} className="max-md:w-[17px] max-md:h-[17px]" />
               <span className="hidden sm:inline">{mode.label}</span>
             </button>
           ))}

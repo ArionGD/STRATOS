@@ -599,7 +599,7 @@ function Dashboard() {
           </div>
         </header>
 
-        <div className="flex-1 flex overflow-hidden relative z-10 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="flex-1 flex overflow-hidden relative z-10 pb-[calc(64px+var(--safe-bottom))] md:pb-0">
           {activeView === 'graph' ? (
             <>
               <motion.div 

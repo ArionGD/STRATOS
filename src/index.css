@@ -6,6 +6,23 @@
 
 :root {
   --sidebar-width: 240px;
+  /* Safe-area insets. In the Android app the native shell already pads for the
+     status and navigation bars, so the page must not add them again. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html.app-mode {
+  --safe-top: 0px;
+  --safe-bottom: 0px;
+}
+
+/* Stop mobile browsers (Firefox font inflation, Chrome/Safari text autosizing)
+   from enlarging text and breaking the phone layout */
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: none;
+  text-size-adjust: 100%;
 }
 
 * {
