@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { LayoutGrid, Layers, FileText, Plus, Pencil, Trash2 } from 'lucide-react'
+import { LayoutGrid, Layers, FileText, Plus, Pencil, Trash2, UserPlus, Users } from 'lucide-react'
+import { ROLE_LABELS } from '../../../services/ShareService'
 import { NoteService } from '../../../services/NoteService'
 import { WorkspaceService } from '../../../services/WorkspaceService'
 import { nodeColors, LOOSE_NOTE_COLOR } from '../graph/palette'
@@ -8,8 +9,13 @@ import { PanelShell, PanelSection, StatRow, ItemRow, InlineCreate, EditableTitle
 import { ActionsMenu, ConfirmDialog } from './ItemActions'
 
 // Workspace (root node) panel: what's in this workspace and quick ways to add to it
-const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey, onRenamed, onDeleted }) => {
+const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey, onRenamed, onDeleted, onShare }) => {
   const dark = theme === 'dark'
+  // The desktop build has no roles; everything there is the user's own
+  const role = workspace?.role || 'owner'
+  const isOwner = role === 'owner'
+  const canEdit = role !== 'viewer'
+  const members = Number(workspace?.member_count) || 1
   const [data, setData] = useState(null)
   const [version, setVersion] = useState(0)
   const [renaming, setRenaming] = useState(false)
@@ -71,19 +77,20 @@ const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, 
       theme={theme}
       icon={LayoutGrid}
       title={workspace?.name || 'Workspace'}
-      subtitle="Workspace"
+      subtitle={members > 1 ? `Shared workspace · ${ROLE_LABELS[role]}` : 'Workspace'}
       onClose={onClose}
       isExpanded={isExpanded}
       onToggleExpand={onToggleExpand}
       footer={<span>{clusters.length} clusters · {notes.length} notes</span>}
       actions={<ActionsMenu theme={theme} items={[
-        { label: 'Rename workspace', icon: Pencil, onClick: () => setRenaming(true) },
-        { label: 'Delete workspace', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
+        onShare && { label: isOwner ? 'Share…' : 'People…', icon: UserPlus, onClick: onShare },
+        isOwner && { label: 'Rename workspace', icon: Pencil, onClick: () => setRenaming(true) },
+        isOwner && { label: 'Delete workspace', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
       ]} />}
     >
-      <EditableTitle theme={theme} value={workspace?.name || 'Workspace'} onSave={rename} editing={renaming} setEditing={setRenaming} />
+      <EditableTitle theme={theme} value={workspace?.name || 'Workspace'} onSave={rename} editing={renaming} setEditing={setRenaming} readOnly={!isOwner} />
       <p className={`mt-1.5 text-[13.5px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-        Everything in this workspace. Open a cluster or note, or add something new.
+        {canEdit ? 'Everything in this workspace. Open a cluster or note, or add something new.' : 'You can view everything in this workspace. Ask an owner if you need to edit.'}
       </p>
 
       <div className="mt-6">
@@ -95,12 +102,20 @@ const WorkspaceView = ({ onClose, theme, workspace, isExpanded, onToggleExpand, 
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <button onClick={newNote} className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold shadow-sm shadow-amber-500/25">
-          <Plus size={15} /> New note
-        </button>
+        {canEdit && (
+          <button onClick={newNote} className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold shadow-sm shadow-amber-500/25">
+            <Plus size={15} /> New note
+          </button>
+        )}
+        {onShare && (
+          <button onClick={onShare} className={`inline-flex items-center gap-2 h-9 px-3.5 rounded-xl border text-[13px] font-semibold ${dark ? 'border-white/10 hover:bg-white/10' : 'border-slate-200 hover:bg-slate-50'}`}>
+            {isOwner ? <><UserPlus size={15} /> Share</> : <><Users size={15} /> {members} people</>}
+            {isOwner && members > 1 && <span className={`ml-0.5 px-1.5 rounded-md text-[11.5px] ${dark ? 'bg-white/10' : 'bg-slate-100'}`}>{members}</span>}
+          </button>
+        )}
       </div>
 
-      <PanelSection theme={theme} title="Clusters" count={clusters.length} action={<InlineCreate theme={theme} label="New cluster" placeholder="Cluster name" onCreate={newCluster} />}>
+      <PanelSection theme={theme} title="Clusters" count={clusters.length} action={canEdit && <InlineCreate theme={theme} label="New cluster" placeholder="Cluster name" onCreate={newCluster} />}>
         {data && clusters.length === 0 && (
           <p className={`px-3 py-3 text-[13px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No clusters yet. Clusters group related notes.</p>
         )}

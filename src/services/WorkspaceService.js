@@ -39,7 +39,9 @@ export const WorkspaceService = {
     const newWS = {
       id: `ws_${Date.now()}`,
       name: name,
-      user_id: user.id
+      user_id: user.id,
+      role: 'owner',
+      member_count: 1
     };
 
     if (isTauri) {

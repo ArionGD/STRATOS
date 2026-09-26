@@ -8,6 +8,7 @@ import Pricing from './landing/Pricing'
 import Support from './landing/Support'
 import Login from './auth/Login'
 import Register from './auth/Register'
+import InvitePage from './auth/InvitePage'
 import Dashboard from './dashboard/Dashboard'
 import useUserStore from './store/useUserStore'
 import { isTauri } from './services/WebApi'
@@ -69,6 +70,7 @@ function AppRoutes() {
         {/* Auth & App */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/invite/:token" element={<InvitePage />} />
         <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
 
         {/* Fallback */}

@@ -13,7 +13,8 @@ import {
   X, Maximize2, Minimize2, Edit3, Bold, Italic, Underline, Strikethrough, Highlighter, Code, Link2,
   Heading1, Heading2, Heading3, List, ListOrdered, ListChecks, Quote, SquareCode, Table2, Minus,
   ImagePlus, Undo2, Redo2, Type, FileText, Layers, Check, CloudOff, Loader2, AtSign,
-  Rows3, Columns3, Trash2, Pencil, FolderInput
+  Rows3, Columns3, Trash2, Pencil, FolderInput,
+  Eye
 } from 'lucide-react'
 import { NoteService } from '../../../services/NoteService'
 import { loadOverview } from '../../../services/OverviewService'
@@ -160,7 +161,7 @@ const Sep = ({ dark }) => <span className={`w-px h-5 mx-1 shrink-0 ${dark ? 'bg-
 
 // ---------------------------------------------------------------- editor
 
-const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, isExpanded, onToggleExpand, onOpenNode, onSaved, onDeleted, onMoved }) => {
+const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, isExpanded, onToggleExpand, onOpenNode, onSaved, onDeleted, onMoved, readOnly = false }) => {
   const dark = theme === 'dark'
   const [title, setTitle] = useState('')
   const [saveState, setSaveState] = useState('idle') // idle | unsaved | saving | saved | error
@@ -298,6 +299,9 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
     onUpdate: () => { if (loadedRef.current) scheduleSaveRef.current() }
   })
   editorRef.current = editor
+
+  // Viewers of a shared workspace can read but not change notes
+  useEffect(() => { editor?.setEditable(!readOnly) }, [editor, readOnly])
 
   // Toolbar state without re-rendering on every keystroke
   const state = useEditorState({
@@ -513,11 +517,11 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <ActionsMenu theme={theme} items={[
+          {!readOnly && <ActionsMenu theme={theme} items={[
             { label: 'Rename', icon: Pencil, onClick: () => { titleRef.current?.focus(); titleRef.current?.select() } },
             { label: 'Move to…', icon: FolderInput, onClick: () => setMoveOpen(true) },
             { label: 'Delete note', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
-          ]} />
+          ]} />}
           <button
             onClick={onToggleExpand}
             title={isExpanded ? 'Exit full width' : 'Full width'}
@@ -537,7 +541,7 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
       </div>
 
       {/* Toolbar */}
-      <div data-hscroll className={`shrink-0 flex items-center gap-0.5 px-2 md:px-4 py-1.5 border-b max-md:overflow-x-auto max-md:no-scrollbar md:flex-wrap ${border}`}>
+      {!readOnly && <div data-hscroll className={`shrink-0 flex items-center gap-0.5 px-2 md:px-4 py-1.5 border-b max-md:overflow-x-auto max-md:no-scrollbar md:flex-wrap ${border}`}>
         <ToolButton dark={dark} label="Undo" disabled={!state.canUndo} onClick={() => c().undo().run()}><Undo2 size={16} /></ToolButton>
         <ToolButton dark={dark} label="Redo" disabled={!state.canRedo} onClick={() => c().redo().run()}><Redo2 size={16} /></ToolButton>
         <Sep dark={dark} />
@@ -574,7 +578,7 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
           </>
         )}
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickImage} />
-      </div>
+      </div>}
 
       {/* Document */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
@@ -584,6 +588,7 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
             value={title}
             onChange={onTitleChange}
             onKeyDown={onTitleKeyDown}
+            readOnly={readOnly}
             placeholder="Untitled"
             rows={1}
             aria-label="Note title"
@@ -626,11 +631,15 @@ const NotesEditor = ({ onClose, theme, activeNode, workspaceId, workspaceName, i
 
       {/* Status bar */}
       <div className={`shrink-0 h-10 flex items-center justify-between gap-3 px-4 md:px-6 border-t text-[12px] ${border} ${muted}`}>
-        <span className={`inline-flex items-center gap-1.5 ${saveState === 'error' ? 'text-rose-500' : ''}`}>
-          <StatusIcon size={13} className={saveState === 'saving' ? 'animate-spin' : saveState === 'saved' ? 'text-emerald-500' : ''} />
-          {statusText}
-        </span>
-        <span className="hidden sm:inline">Type <kbd className="font-semibold">/</kbd> for blocks · <kbd className="font-semibold">@</kbd> to link</span>
+        {readOnly ? (
+          <span className="inline-flex items-center gap-1.5"><Eye size={13} /> View only. Ask an owner for edit access.</span>
+        ) : (
+          <span className={`inline-flex items-center gap-1.5 ${saveState === 'error' ? 'text-rose-500' : ''}`}>
+            <StatusIcon size={13} className={saveState === 'saving' ? 'animate-spin' : saveState === 'saved' ? 'text-emerald-500' : ''} />
+            {statusText}
+          </span>
+        )}
+        {!readOnly && <span className="hidden sm:inline">Type <kbd className="font-semibold">/</kbd> for blocks · <kbd className="font-semibold">@</kbd> to link</span>}
       </div>
 
       <ConfirmDialog

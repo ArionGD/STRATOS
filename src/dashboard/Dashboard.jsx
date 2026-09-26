@@ -29,6 +29,9 @@ import Plan from './modules/Plan'
 import Vault from './modules/Vault'
 import System from './modules/System'
 import { WorkspaceService } from '../services/WorkspaceService'
+import { isTauri } from '../services/WebApi'
+import { takeWorkspaceToOpen } from '../services/ShareService'
+import ShareDialog from './components/share/ShareDialog'
 import { 
   Brain,
   LayoutGrid, 
@@ -48,7 +51,8 @@ import {
   Moon,
   LogOut,
   PanelRightOpen,
-  PanelRightClose
+  PanelRightClose,
+  Users
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import useUserStore from '../store/useUserStore'
@@ -78,6 +82,7 @@ function Dashboard() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   // Bumped when a panel creates a note/cluster so the graph reloads
   const [graphReloadKey, setGraphReloadKey] = useState(0)
+  const [isShareOpen, setIsShareOpen] = useState(false)
   const reloadGraph = () => setGraphReloadKey(k => k + 1)
   const [toast, setToast] = useState(null)
   const toastTimer = useRef(null)
@@ -149,6 +154,28 @@ function Dashboard() {
     notify(`Deleted “${ws.name}”`)
   }
 
+  // ---------------------------------------------------------------- sharing (web only)
+
+  const readOnly = activeWorkspace?.role === 'viewer'
+  const openShare = isTauri ? undefined : () => setIsShareOpen(true)
+
+  // Member counts and roles can change in the share dialog
+  const refreshWorkspaces = async () => {
+    const data = await WorkspaceService.initialize()
+    if (!data?.length) return
+    setWorkspaces(data)
+    setActiveWorkspace(prev => data.find(w => w.id === prev?.id) || data[0])
+  }
+
+  const onLeftWorkspace = (ws) => {
+    const remaining = workspaces.filter(w => w.id !== ws.id)
+    setWorkspaces(remaining)
+    setActiveWorkspace(remaining[0] || null)
+    closePanel()
+    reloadGraph()
+    notify(`You left “${ws.name}”`)
+  }
+
   const onClusterDeleted = ({ name }) => {
     closePanel()
     reloadGraph()
@@ -203,7 +230,9 @@ function Dashboard() {
       setWorkspaces(data)
       // SAFETY RAIL: Only set if data exists and no workspace is active
       if (data && data.length > 0 && !activeWorkspace) {
-        setActiveWorkspace(data[0])
+        // Just joined a workspace from an invite: open that one
+        const joinedId = takeWorkspaceToOpen()
+        setActiveWorkspace(data.find(w => w.id === joinedId) || data[0])
       }
     }
     initWorkspaces()
@@ -405,6 +434,7 @@ function Dashboard() {
                               activeWorkspace?.id === ws.id ? 'border-blue-500 bg-blue-500' : 'border-slate-600'
                             }`} />
                             <span className="text-xs font-bold tracking-wide">{ws.name}</span>
+                            {Number(ws.member_count) > 1 && <Users size={12} className="opacity-60" aria-label="Shared" />}
                           </div>
                           <button 
                             onClick={(e) => {
@@ -699,6 +729,7 @@ function Dashboard() {
                   setDashboardNodes={setDashboardNodes}
                   activeNode={activeNode}
                   reloadKey={graphReloadKey}
+                  onShare={openShare}
                 />
 
                 {/* Right panel toggle (desktop) */}
@@ -766,6 +797,7 @@ function Dashboard() {
                         reloadKey={graphReloadKey}
                         onRenamed={onWorkspaceRenamed}
                         onDeleted={onWorkspaceDeleted}
+                        onShare={openShare}
                       />
                     ) : activeNode?.data?.type === 'cluster' ? (
                       <ClusterView 
@@ -783,6 +815,7 @@ function Dashboard() {
                         reloadKey={graphReloadKey}
                         onDeleted={onClusterDeleted}
                         notify={notify}
+                        readOnly={readOnly}
                       />
                     ) : (
                       <NotesEditor 
@@ -798,6 +831,7 @@ function Dashboard() {
                         onSaved={reloadGraph}
                         onDeleted={onNoteDeleted}
                         onMoved={onNoteMoved}
+                        readOnly={readOnly}
                         isExpanded={isEditorExpanded}
                         onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
                       />
@@ -881,6 +915,18 @@ function Dashboard() {
       />
 
       <Toast theme={theme} message={toast} />
+      {openShare && (
+        <ShareDialog
+          open={isShareOpen}
+          theme={theme}
+          workspace={activeWorkspace}
+          currentUser={user}
+          onClose={() => { setIsShareOpen(false); refreshWorkspaces() }}
+          onLeft={onLeftWorkspace}
+          onMyRoleChanged={refreshWorkspaces}
+          notify={notify}
+        />
+      )}
 
       <MobileSearchSheet
         isOpen={isSearchOpen}

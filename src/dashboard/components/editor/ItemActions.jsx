@@ -23,6 +23,7 @@ export function ActionsMenu({ theme, items, label = 'More actions' }) {
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
   }, [open])
 
+  if (!items.some(Boolean)) return null
   return (
     <div ref={ref} className="relative">
       <button
@@ -68,7 +69,7 @@ export function ActionsMenu({ theme, items, label = 'More actions' }) {
   )
 }
 
-function Modal({ open, theme, onClose, children, width = 'md:w-[420px]' }) {
+export function Modal({ open, theme, onClose, children, width = 'md:w-[420px]' }) {
   const dark = theme === 'dark'
   useEffect(() => {
     if (!open) return

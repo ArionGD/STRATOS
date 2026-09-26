@@ -143,6 +143,15 @@ npm run tauri dev
 | `DEMO_USERNAME` / `DEMO_PASSWORD` | Demo account created (password reset) on every boot; `test` / `pass` in render.yaml |
 | `NODE_OPTIONS` | `--max-old-space-size=320` keeps the build (~395 MB peak) inside the 512 MB free instance |
 | `VITE_ENABLE_AI` | `false` hides METIS AI in the web build (shown by default; always on in the desktop app) |
+| `APP_URL` | Public site address used in invite links, e.g. `https://stratos.altair-engine.com` (defaults to the address the request came in on) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | SMTP account for invite emails (Gmail with an app password, Brevo, Resend, Mailgun…). Port 465 uses TLS, other ports use STARTTLS |
+| `MAIL_FROM` | Sender shown on invite emails, e.g. `Stratos <you@gmail.com>` (defaults to `SMTP_USER`) |
+
+**Sharing workspaces.** Every account starts with its own workspace. In a workspace, **Share** lets an
+owner invite people by email as *Can edit* or *Can view*. The invite email carries a private link
+(a random token, stored only as a hash) that works just for that email address, expires after 7 days,
+and stops working if it is cancelled or resent. The person opens the link, creates an account or logs in,
+and lands in the shared workspace. Without SMTP settings, the link is copied for you to send yourself.
 
 Free-tier notes: the service sleeps after 15 min idle (first request takes ~1 min to wake).
 The free disk is ephemeral, so the SQLite data (accounts, notes) resets on every deploy, restart

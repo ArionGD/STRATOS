@@ -25,3 +25,17 @@ services:
         value: test
       - key: DEMO_PASSWORD
         value: pass
+      # Workspace invite emails (optional). Without these, the Share dialog shows
+      # a link to send yourself. Set the values in the Render dashboard.
+      - key: APP_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false

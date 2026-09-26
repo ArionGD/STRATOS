@@ -5,6 +5,8 @@ import { invoke } from '@tauri-apps/api/core'
 import { useNavigate, Link } from 'react-router-dom'
 import { WebApi, isTauri } from '../services/WebApi'
 import { isPhoneFlow } from '../app-flow/appMode'
+import { openWorkspaceNext } from '../services/ShareService'
+import { useInvite, InviteBanner } from './useInvite'
 import useUserStore from '../store/useUserStore'
 
 // BRAND ICONS (SVG DATA)
@@ -25,6 +27,9 @@ const Register = () => {
   
   const [formData, setFormData] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' })
   const [status, setStatus] = useState({ type: '', message: '' })
+  const { token: inviteToken, invite } = useInvite()
+  // An invite is bound to one email address, so that field is filled and locked
+  const lockedEmail = invite?.status === 'pending' ? invite.email : null
 
   const handleSignUp = async (e) => {
     e.preventDefault()
@@ -47,26 +52,19 @@ const Register = () => {
     } else {
       // WEB MODE: Stratos API
       try {
-        const { message } = await WebApi.post('/auth/register', {
+        const { user, token, joined } = await WebApi.post('/auth/register', {
           first_name: formData.firstName,
           last_name: formData.lastName,
           username: formData.username,
-          email: formData.email,
-          password: formData.password
+          email: lockedEmail || formData.email,
+          password: formData.password,
+          ...(lockedEmail ? { invite: inviteToken } : {})
         });
-        if (isPhoneFlow) {
-          // Phone flow: sign straight in and open the dashboard
-          const { user, token } = await WebApi.post('/auth/login', {
-            username: formData.username,
-            password: formData.password
-          });
-          setUser(user, token);
-          setStatus({ type: 'success', message: `Welcome, ${user.first_name}!` });
-          setTimeout(() => navigate('/app', { replace: true }), 500);
-          return;
-        }
-        setStatus({ type: 'success', message: `${message} Forwarding to Login...` });
-        setTimeout(() => navigate('/login'), 2000);
+        // Signed straight in; an invite opens the shared workspace first
+        setUser(user, token);
+        if (joined) openWorkspaceNext(joined.id);
+        setStatus({ type: 'success', message: joined ? `Welcome, ${user.first_name}! You joined ${joined.name}.` : `Welcome, ${user.first_name}!` });
+        setTimeout(() => navigate('/app', { replace: true }), isPhoneFlow ? 500 : 900);
       } catch (err) {
         setStatus({ type: 'error', message: err.message });
       }
@@ -104,6 +102,8 @@ const Register = () => {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Create an account</h1>
             <p className="text-center md:text-left text-slate-500 text-sm font-medium">Join the next generation of productivity.</p>
           </div>
+
+          <InviteBanner invite={lockedEmail ? invite : null} />
 
           {status.message && (
             <div className={`mb-4 px-4 py-2 rounded-xl text-xs font-bold text-center ${status.type === 'error' ? 'bg-red-50 text-red-600' : status.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
@@ -143,7 +143,7 @@ const Register = () => {
               <label className="text-xs font-bold text-slate-700 ml-1">Email</label>
               <div className="relative group">
                 <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="aditya@stratos.com" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-12 py-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm" />
+                <input type="email" required value={lockedEmail || formData.email} readOnly={!!lockedEmail} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="aditya@stratos.com" className="w-full read-only:text-slate-500 bg-slate-50 border border-slate-100 rounded-xl px-12 py-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm" />
               </div>
             </div>
 
@@ -156,7 +156,7 @@ const Register = () => {
             </div>
 
             <button type="submit" className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:scale-[1.01] active:scale-[0.99] transition-all text-sm mt-2">Sign Up</button>
-            <p className="text-center text-xs text-slate-500 pb-2 md:pb-0">Already have an account? <Link to="/login" className="inline-block md:inline py-2 md:py-0 text-blue-600 font-bold hover:underline">Log in</Link></p>
+            <p className="text-center text-xs text-slate-500 pb-2 md:pb-0">Already have an account? <Link to={inviteToken ? `/login?invite=${encodeURIComponent(inviteToken)}` : '/login'} className="inline-block md:inline py-2 md:py-0 text-blue-600 font-bold hover:underline">Log in</Link></p>
           </form>
         </div>
 

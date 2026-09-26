@@ -9,7 +9,7 @@ import { PanelShell, PanelSection, StatRow, ItemRow, EditableTitle, previewOf } 
 import { ActionsMenu, ConfirmDialog } from './ItemActions'
 
 // Cluster panel: its notes, a quick way to add one, and notes that link here
-const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey, onDeleted, notify }) => {
+const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey, onDeleted, notify, readOnly = false }) => {
   const dark = theme === 'dark'
   const [data, setData] = useState(null)
   const [overview, setOverview] = useState(null)
@@ -86,7 +86,7 @@ const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpa
       isExpanded={isExpanded}
       onToggleExpand={onToggleExpand}
       footer={<span>{clusterNotes.length} {clusterNotes.length === 1 ? 'note' : 'notes'} · {words} words</span>}
-      actions={<ActionsMenu theme={theme} items={[
+      actions={!readOnly && <ActionsMenu theme={theme} items={[
         { label: 'Rename cluster', icon: Pencil, onClick: () => setRenaming(true) },
         { label: 'Delete cluster', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
       ]} />}
@@ -94,7 +94,7 @@ const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpa
       <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color }}>
         <span className="w-2 h-2 rounded-full" style={{ background: color }} /> Cluster
       </div>
-      <EditableTitle theme={theme} value={name} onSave={rename} editing={renaming} setEditing={setRenaming} className="mt-1" />
+      <EditableTitle theme={theme} value={name} onSave={rename} editing={renaming} setEditing={setRenaming} className="mt-1" readOnly={readOnly} />
       <button
         onClick={() => onOpenNode?.({ kind: 'workspace', id: 'root-node', title: workspace?.name, workspace })}
         className={`mt-1.5 inline-flex items-center gap-1.5 text-[13px] ${dark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
@@ -110,11 +110,11 @@ const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpa
         ]} />
       </div>
 
-      <div className="mt-4">
+      {!readOnly && <div className="mt-4">
         <button onClick={newNote} className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-white text-[13px] font-semibold shadow-sm" style={{ background: color }}>
           <Plus size={15} /> New note in {name}
         </button>
-      </div>
+      </div>}
 
       <PanelSection theme={theme} title="Notes" count={clusterNotes.length}>
         {data && clusterNotes.length === 0 && (

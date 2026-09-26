@@ -144,7 +144,7 @@ export const previewOf = (content, n = 70) => {
  * Big page title that turns into an input when clicked (or when `editing` is
  * set from a "Rename" menu item). Enter or blur saves, Escape cancels.
  */
-export function EditableTitle({ theme, value, onSave, editing, setEditing, className = '' }) {
+export function EditableTitle({ theme, value, onSave, editing, setEditing, className = '', readOnly = false }) {
   const dark = theme === 'dark'
   const [draft, setDraft] = useState(value)
   const inputRef = useRef(null)
@@ -159,6 +159,7 @@ export function EditableTitle({ theme, value, onSave, editing, setEditing, class
   }
 
   const base = `w-full text-[28px] md:text-[34px] font-bold tracking-tight leading-tight ${className}`
+  if (readOnly) return <h1 className={base}>{value}</h1>
   if (editing) {
     return (
       <input

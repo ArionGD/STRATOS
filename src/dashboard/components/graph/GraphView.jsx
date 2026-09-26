@@ -7,7 +7,7 @@ import CommandBar from './CommandBar'
 import { NoteService } from '../../../services/NoteService'
 import { WorkspaceService } from '../../../services/WorkspaceService'
 
-const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode, reloadKey }) => {
+const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode, reloadKey, onShare }) => {
   const [displayMode, setDisplayMode] = useState('graph')
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -154,6 +154,7 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
           setNodeType={setNodeType}
           displayMode={displayMode}
           setDisplayMode={setDisplayMode}
+          onShare={onShare}
         />
       </div>
 

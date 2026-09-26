@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ChevronDown, Layers, FileText, GitGraph, Box, List, Layout, Orbit, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Plus, ChevronDown, Layers, FileText, GitGraph, Box, List, Layout, Orbit, ChevronsLeft, ChevronsRight, Users, UserPlus } from 'lucide-react'
 import useIsMobile from '../../../hooks/useIsMobile'
 
 const CommandBar = ({ 
@@ -17,10 +17,14 @@ const CommandBar = ({
   nodeType,
   setNodeType,
   displayMode,
-  setDisplayMode
+  setDisplayMode,
+  onShare
 }) => {
+  // Viewers of a shared workspace can look around but not add nodes
+  const canEdit = activeWorkspace?.role !== 'viewer'
   const [isWSDropdownOpen, setIsWSDropdownOpen] = useState(false)
   const [isAddingNode, setIsAddingNode] = useState(false)
+  useEffect(() => { if (!canEdit) setIsAddingNode(false) }, [canEdit])
   const [isParentDropdownOpen, setIsParentDropdownOpen] = useState(false)
   const isMobile = useIsMobile()
 
@@ -76,7 +80,8 @@ const CommandBar = ({
                       : (theme === 'dark' ? 'text-slate-400 hover:bg-white/5 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]')
                   }`}
                 >
-                  {ws.name}
+                  <span className="flex-1 min-w-0 truncate">{ws.name}</span>
+                  {Number(ws.member_count) > 1 && <Users size={13} className="shrink-0 opacity-60" aria-label="Shared" />}
                 </button>
               ))}
             </motion.div>
@@ -197,7 +202,21 @@ const CommandBar = ({
           )}
         </AnimatePresence>
 
-        <button 
+        {onShare && activeWorkspace && (
+          <button
+            onClick={onShare}
+            aria-label="Share workspace"
+            title={activeWorkspace.role === 'owner' || !activeWorkspace.role ? 'Share workspace' : 'People in this workspace'}
+            className={`hidden md:flex items-center gap-1.5 h-9 px-3 mr-1 rounded-xl text-[12.5px] font-bold transition-colors ${
+              theme === 'dark' ? 'text-slate-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            {Number(activeWorkspace.member_count) > 1 ? <Users size={15} /> : <UserPlus size={15} />}
+            {Number(activeWorkspace.member_count) > 1 ? activeWorkspace.member_count : 'Share'}
+          </button>
+        )}
+
+        {canEdit && <button 
           onClick={() => setIsAddingNode(!isAddingNode)}
           aria-label="Add node"
           aria-expanded={isAddingNode}
@@ -208,7 +227,7 @@ const CommandBar = ({
           }`}
         >
           <Plus size={18} strokeWidth={3} className={`transition-transform duration-300 ${isAddingNode ? 'rotate-45' : ''}`} />
-        </button>
+        </button>}
 
         <div className={`w-px h-6 mx-1 md:mx-2 ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`}></div>
 
