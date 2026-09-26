@@ -1,111 +1,154 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { X, Layers, Share2, MoreHorizontal, LayoutGrid, Box, Target, Zap } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Layers, FileText, Plus, LayoutGrid, Pencil, Trash2 } from 'lucide-react'
+import { NoteService } from '../../../services/NoteService'
+import { WorkspaceService } from '../../../services/WorkspaceService'
+import { loadOverview } from '../../../services/OverviewService'
+import { nodeColors } from '../graph/palette'
+import { wordCount, noteMentions } from '../../../utils/noteContent'
+import { PanelShell, PanelSection, StatRow, ItemRow, EditableTitle, previewOf } from './PanelShell'
+import { ActionsMenu, ConfirmDialog } from './ItemActions'
 
-const ClusterView = ({ onClose, theme, node }) => {
+// Cluster panel: its notes, a quick way to add one, and notes that link here
+const ClusterView = ({ onClose, theme, node, workspace, isExpanded, onToggleExpand, onOpenNode, onChanged, reloadKey, onDeleted, notify, readOnly = false }) => {
+  const dark = theme === 'dark'
+  const [data, setData] = useState(null)
+  const [overview, setOverview] = useState(null)
+  const [version, setVersion] = useState(0)
+  const [renaming, setRenaming] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    if (!workspace?.id) return
+    let cancelled = false
+    NoteService.getWorkspaceData(workspace.id).then(d => { if (!cancelled) setData(d) })
+    loadOverview().then(o => { if (!cancelled) setOverview(o) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [workspace?.id, node?.id, reloadKey, version])
+
+  const { clusters = [], notes = [] } = data || {}
+  const cluster = clusters.find(c => c.id === node?.id)
+  const name = cluster?.name || node?.data?.label || 'Cluster'
+
+  const color = useMemo(() => nodeColors([
+    { id: 'root-node', type: 'workspace' },
+    ...clusters.map(c => ({ id: c.id, type: 'cluster', parentId: c.parent_id }))
+  ]).get(node?.id) || '#10B981', [clusters, node?.id])
+
+  const clusterNotes = useMemo(
+    () => notes.filter(n => n.parent_id === node?.id).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || '')),
+    [notes, node?.id]
+  )
+  const words = useMemo(() => clusterNotes.reduce((n, note) => n + wordCount(note.content), 0), [clusterNotes])
+
+  const backlinks = useMemo(() => {
+    if (!overview || !node) return []
+    const wsById = new Map(overview.workspaces.map(w => [w.id, w]))
+    return overview.notes
+      .filter(n => n.parent_id !== node.id && noteMentions(n.content).includes(node.id))
+      .map(n => ({ ...n, workspace: wsById.get(n.workspace_id) }))
+      .filter(n => n.workspace)
+  }, [overview, node])
+
+  const open = (n, ws = workspace) => onOpenNode?.({ kind: 'note', id: n.id, title: n.title, parentId: n.parent_id, workspace: ws })
+
+  const newNote = async () => {
+    const note = { id: `note-${Date.now()}`, title: 'Untitled', content: '' }
+    const res = await NoteService.saveNote(note, workspace.id, node.id)
+    if (!res?.success) return
+    setVersion(v => v + 1)
+    onChanged?.()
+    onOpenNode?.({ kind: 'note', id: note.id, title: note.title, parentId: node.id, workspace })
+  }
+
+  const rename = async (newName) => {
+    const res = await WorkspaceService.renameCluster(node.id, newName)
+    if (!res?.success) { window.alert("Couldn't rename the cluster. Please try again."); return }
+    setVersion(v => v + 1)
+    onChanged?.()
+    notify?.(`Renamed to “${newName}”`)
+  }
+
+  const remove = async () => {
+    const res = await WorkspaceService.deleteCluster(node.id)
+    setConfirmDelete(false)
+    if (res?.success) onDeleted?.({ id: node.id, name })
+    else window.alert("Couldn't delete the cluster. Please try again.")
+  }
+
   return (
-    <div
-      className={`h-full w-full flex flex-col border-l transition-colors duration-500 overflow-hidden ${
-        theme === 'dark' 
-          ? 'bg-[#0F172A]/80 backdrop-blur-3xl border-white/10 text-white' 
-          : 'bg-white border-slate-200 text-slate-900'
-      }`}
+    <PanelShell
+      theme={theme}
+      icon={Layers}
+      iconColor={color}
+      title={name}
+      subtitle={`Cluster in ${workspace?.name || 'workspace'}`}
+      onClose={onClose}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      footer={<span>{clusterNotes.length} {clusterNotes.length === 1 ? 'note' : 'notes'} · {words} words</span>}
+      actions={!readOnly && <ActionsMenu theme={theme} items={[
+        { label: 'Rename cluster', icon: Pencil, onClick: () => setRenaming(true) },
+        { label: 'Delete cluster', icon: Trash2, danger: true, onClick: () => setConfirmDelete(true) }
+      ]} />}
     >
-      {/* Header */}
-      <div className="h-20 flex items-center justify-between px-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500">
-            <Layers size={18} />
-          </div>
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest">{node?.data?.label} cluster</h3>
-            <p className="text-[10px] text-slate-500 font-medium italic">
-              Hybrid Cluster Management Active
-            </p>
-          </div>
-        </div>
-        <button 
-          onClick={onClose}
-          className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
-        >
-          <X size={20} />
-        </button>
+      <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color }}>
+        <span className="w-2 h-2 rounded-full" style={{ background: color }} /> Cluster
+      </div>
+      <EditableTitle theme={theme} value={name} onSave={rename} editing={renaming} setEditing={setRenaming} className="mt-1" readOnly={readOnly} />
+      <button
+        onClick={() => onOpenNode?.({ kind: 'workspace', id: 'root-node', title: workspace?.name, workspace })}
+        className={`mt-1.5 inline-flex items-center gap-1.5 text-[13px] ${dark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
+      >
+        <LayoutGrid size={13} /> {workspace?.name || 'Workspace'}
+      </button>
+
+      <div className="mt-6">
+        <StatRow theme={theme} items={[
+          { label: 'Notes', value: data ? clusterNotes.length : '–' },
+          { label: 'Words', value: data ? (words > 999 ? `${(words / 1000).toFixed(1)}k` : words) : '–' },
+          { label: 'Linked from', value: overview ? backlinks.length : '–' }
+        ]} />
       </div>
 
-      {/* Cluster Body */}
-      <div className="flex-1 overflow-y-auto p-8 space-y-8">
-        <div className="relative">
-          <div className="absolute -top-4 -left-4 w-20 h-20 bg-blue-500/10 blur-3xl rounded-full"></div>
-          <h1 className="text-4xl font-black mb-2 tracking-tighter relative z-10">{node?.data?.label}</h1>
-          <div className="flex items-center gap-4 relative z-10">
-            <div className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest ${theme === 'dark' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
-              Cluster Unit
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-bold uppercase tracking-widest">
-              <Zap size={12} className="text-blue-500" />
-              Swarm Sync Active
-            </div>
-          </div>
-        </div>
+      {!readOnly && <div className="mt-4">
+        <button onClick={newNote} className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-white text-[13px] font-semibold shadow-sm" style={{ background: color }}>
+          <Plus size={15} /> New note in {name}
+        </button>
+      </div>}
 
-        {/* Cluster Stats Container */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Sub-Nodes', val: '04', icon: Box, color: 'text-blue-500' },
-            { label: 'Efficiency', val: '98%', icon: Target, color: 'text-green-500' },
-            { label: 'Latency', val: '2ms', icon: Zap, color: 'text-amber-500' }
-          ].map((stat, i) => (
-            <div key={i} className={`p-4 rounded-2xl border transition-all hover:border-white/20 ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-              <div className="flex items-center gap-2 mb-2">
-                <stat.icon size={14} className={stat.color} />
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</span>
-              </div>
-              <div className="text-2xl font-black">{stat.val}</div>
-            </div>
+      <PanelSection theme={theme} title="Notes" count={clusterNotes.length}>
+        {data && clusterNotes.length === 0 && (
+          <p className={`px-3 py-3 text-[13px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>This cluster has no notes yet.</p>
+        )}
+        <div className="-mx-3">
+          {clusterNotes.map(n => (
+            <ItemRow key={n.id} theme={theme} icon={FileText} color={color} title={n.title} preview={previewOf(n.content, 80)} onClick={() => open(n)} />
           ))}
         </div>
+      </PanelSection>
 
-        {/* Cluster Map Placeholder */}
-        <div className="space-y-4">
-          <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Cluster Distribution</h3>
-          <div className={`aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all cursor-pointer hover:bg-white/5 ${theme === 'dark' ? 'border-white/5 bg-black/20' : 'border-slate-100 bg-slate-50'}`}>
-             <div className="p-3 bg-white/5 rounded-full">
-               <LayoutGrid size={24} className="text-slate-600" />
-             </div>
-             <div className="text-center">
-               <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">Empty Swarm</div>
-               <div className="text-[9px] text-slate-600 font-bold uppercase mt-1">Drag nodes here to clusterize</div>
-             </div>
+      {backlinks.length > 0 && (
+        <PanelSection theme={theme} title="Linked from" count={backlinks.length}>
+          <div className="-mx-3">
+            {backlinks.map(n => (
+              <ItemRow key={n.id} theme={theme} icon={FileText} color="#F59E0B" title={n.title}
+                meta={n.workspace?.name} onClick={() => open(n, n.workspace)} />
+            ))}
           </div>
-        </div>
-
-        {/* Management Tools */}
-        <div className="space-y-4">
-           <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Swarm Actions</h3>
-           <div className="grid grid-cols-2 gap-2">
-             <button className={`p-3 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5 hover:bg-blue-600 hover:text-white' : 'bg-white border-slate-100 hover:bg-blue-50 hover:text-blue-600'}`}>
-               Auto-Distribute
-             </button>
-             <button className={`p-3 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5 hover:bg-green-600 hover:text-white' : 'bg-white border-slate-100 hover:bg-green-50 hover:text-green-600'}`}>
-               Sync States
-             </button>
-           </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className={`p-6 border-t flex items-center justify-between ${theme === 'dark' ? 'border-white/10' : 'border-slate-100'}`}>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">
-            <Share2 size={16} />
-            Share Cluster
-          </button>
-        </div>
-        <button className="px-6 py-2 bg-blue-600 rounded-full text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95">
-          Finalize Swarm
-        </button>
-      </div>
-    </div>
+        </PanelSection>
+      )}
+      <ConfirmDialog
+        open={confirmDelete}
+        theme={theme}
+        title={`Delete “${name}”?`}
+        body={clusterNotes.length
+          ? `The cluster is removed and its ${clusterNotes.length} ${clusterNotes.length === 1 ? 'note moves' : 'notes move'} up to the workspace, so nothing is lost.`
+          : 'The cluster is removed. It has no notes.'}
+        confirmLabel="Delete cluster"
+        onConfirm={remove}
+        onCancel={() => setConfirmDelete(false)}
+      />
+    </PanelShell>
   )
 }
 

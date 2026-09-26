@@ -35,3 +35,6 @@ src-tauri/binaries/
 src-tauri/gen/
 src-tauri/remote/
 src-tauri/*.log
+
+# Local web-server database (PGlite)
+server/.data/

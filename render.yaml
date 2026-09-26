@@ -1,0 +1,41 @@
+# Render Blueprint: Stratos web app (free tier, SQLite)
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo.
+# The free tier's disk is ephemeral: the SQLite file resets on every deploy,
+# restart or idle spin-down. The demo account below is recreated on each boot.
+services:
+  - type: web
+    name: stratos
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      # Free instances have 512 MB RAM; capping the heap keeps the Vite build
+      # (~395 MB peak with this cap vs ~495 MB without) and the server under it
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=320
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEMO_USERNAME
+        value: test
+      - key: DEMO_PASSWORD
+        value: pass
+      # Workspace invite emails (optional). Without these, the Share dialog shows
+      # a link to send yourself. Set the values in the Render dashboard.
+      - key: APP_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false

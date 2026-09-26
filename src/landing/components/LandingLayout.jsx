@@ -11,7 +11,7 @@ const LandingLayout = ({ children }) => {
       <div className="fixed top-[-10%] right-[-5%] w-[800px] h-[800px] bg-blue-100/40 rounded-full blur-[120px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-indigo-50/50 rounded-full blur-[100px] pointer-events-none z-0"></div>
       
-      <main className="relative z-10 pt-24 flex flex-col min-h-screen">
+      <main className="relative z-10 pt-16 md:pt-24 flex flex-col min-h-screen">
         <div className="flex-1">
           {children}
         </div>

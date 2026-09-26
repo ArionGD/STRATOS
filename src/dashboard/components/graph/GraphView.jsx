@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow'
 import FlowChartView from './flow/FlowChartView'
-import NodeGraphSymmetryView from './node/NodeGraphSymmetryView'
 import ListView from './list/ListView'
+import ForceGraphView from './force/ForceGraphView'
 import CommandBar from './CommandBar'
 import { NoteService } from '../../../services/NoteService'
 import { WorkspaceService } from '../../../services/WorkspaceService'
 
-const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode }) => {
-  const [displayMode, setDisplayMode] = useState('chart')
+const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, workspaces, setActiveWorkspace, setActiveNode, setIsEditorOpen, setDashboardNodes, activeNode, reloadKey, onShare }) => {
+  const [displayMode, setDisplayMode] = useState('graph')
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [newNodeName, setNewNodeName] = useState('')
@@ -61,9 +61,13 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
     setSelectedParentId('');
   }, [newNodeName, selectedParentId, nodes, nodeType, activeWorkspace]);
 
+  // Keep the dashboard's copy of the graph current (the workspace panel counts from it)
+  useEffect(() => { setDashboardNodes(nodes) }, [nodes, setDashboardNodes])
+
   // Sync with workspace (Fetch from DB)
   useEffect(() => {
-    if (!activeWorkspace) return;
+    // No workspace left (e.g. the last one was deleted): clear the graph
+    if (!activeWorkspace) { setNodes([]); setEdges([]); return; }
     
     const loadArchitecture = async () => {
       const { clusters, notes } = await NoteService.getWorkspaceData(activeWorkspace.id);
@@ -79,19 +83,25 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
       const newNodes = [rootNode];
       const newEdges = [];
 
+      // Items saved against the workspace id (or a missing node) hang off the root,
+      // otherwise ReactFlow throws "Parent node not found" and blanks the dashboard
+      const knownIds = new Set([rootId, ...clusters.map(c => c.id), ...notes.map(n => n.id)]);
+      const parentOf = (pid) => (knownIds.has(pid) ? pid : rootId);
+
       // Map Clusters to Nodes
       clusters.forEach((c, idx) => {
         const id = c.id;
+        const parentId = parentOf(c.parent_id);
         newNodes.push({
           id,
           type: 'cluster',
-          parentId: c.parent_id,
+          parentId,
           position: { x: 300 + (idx * 100), y: 150 },
           data: { label: c.name, type: 'cluster' }
         });
         newEdges.push({
-          id: `e-${c.parent_id}-${id}`,
-          source: c.parent_id,
+          id: `e-${parentId}-${id}`,
+          source: parentId,
           target: id,
           animated: true,
           style: { stroke: '#F59E0B', strokeWidth: 2, opacity: 0.3 }
@@ -101,16 +111,17 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
       // Map Notes to Nodes
       notes.forEach((n, idx) => {
         const id = n.id;
+        const parentId = parentOf(n.parent_id);
         newNodes.push({
           id,
           type: 'note',
-          parentId: n.parent_id,
+          parentId,
           position: { x: 300 + (idx * 75), y: 250 },
           data: { label: n.title, type: 'note' }
         });
         newEdges.push({
-          id: `e-${n.parent_id}-${id}`,
-          source: n.parent_id,
+          id: `e-${parentId}-${id}`,
+          source: parentId,
           target: id,
           animated: true,
           style: { stroke: '#3B82F6', strokeWidth: 2, opacity: 0.3 }
@@ -122,12 +133,12 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
     };
 
     loadArchitecture();
-  }, [activeWorkspace, theme]);
+  }, [activeWorkspace, theme, reloadKey]);
 
   return (
     <div className="w-full h-full relative overflow-hidden">
       {/* Floating Command Bar */}
-      <div className="absolute top-6 left-6 z-[1000]">
+      <div className="absolute top-3 left-3 right-3 md:right-auto md:top-6 md:left-6 z-[1000]">
         <CommandBar 
           theme={theme}
           activeWorkspace={activeWorkspace}
@@ -143,12 +154,25 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
           setNodeType={setNodeType}
           displayMode={displayMode}
           setDisplayMode={setDisplayMode}
+          onShare={onShare}
         />
       </div>
 
       {/* Visualization Container - Relies on Dashboard's flex layout for the 50/50 split */}
       <div className="absolute inset-0 w-full h-full">
         {/* Visual Engines */}
+        {displayMode === 'graph' && (
+          <ForceGraphView
+            theme={theme}
+            focusId={activeNode?.id}
+            nodes={nodes}
+            edges={edges}
+            setActiveNode={setActiveNode}
+            setIsEditorOpen={setIsEditorOpen}
+            setDashboardNodes={setDashboardNodes}
+          />
+        )}
+
         {displayMode === 'chart' && (
           <FlowChartView 
             theme={theme}
@@ -169,19 +193,15 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
         )}
         
         {displayMode === 'node' && (
-          <NodeGraphSymmetryView 
+          <ForceGraphView
+            variant="organic"
             theme={theme}
-            activeWorkspace={activeWorkspace}
+            focusId={activeNode?.id}
             nodes={nodes}
-            onNodesChange={onNodesChange}
             edges={edges}
-            onEdgesChange={onEdgesChange}
-            displayMode={displayMode}
             setActiveNode={setActiveNode}
             setIsEditorOpen={setIsEditorOpen}
             setDashboardNodes={setDashboardNodes}
-            isEditorOpen={isEditorOpen}
-            isAiOpen={isAiOpen}
           />
         )}
 
@@ -200,14 +220,14 @@ const GraphOrchestrator = ({ theme, isEditorOpen, isAiOpen, activeWorkspace, wor
         )}
 
         {displayMode === 'board' && (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-transparent">
+          <div className="w-full h-full flex flex-col items-center justify-center px-6 md:px-0 text-center md:text-left bg-transparent">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-2xl ${theme === 'dark' ? 'bg-slate-800 shadow-black/50' : 'bg-white shadow-slate-200/50'}`}>
               <span className="text-2xl opacity-60">🚧</span>
             </div>
-            <h2 className={`text-xl font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
+            <h2 className={`text-lg md:text-xl font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}>
               {displayMode} Engine
             </h2>
-            <p className="text-xs font-bold tracking-widest uppercase text-amber-500">
+            <p className="text-[11px] md:text-xs font-bold tracking-widest uppercase text-amber-500">
               Module Offline • Coming Soon
             </p>
           </div>

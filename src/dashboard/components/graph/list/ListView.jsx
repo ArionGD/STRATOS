@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Layers, ChevronRight, Box } from 'lucide-react'
+import useIsMobile from '../../../../hooks/useIsMobile'
 
 const ListItem = ({ node, nodes, edges, depth, theme, activeNode, onNodeClick }) => {
   const children = useMemo(() => {
@@ -14,6 +15,7 @@ const ListItem = ({ node, nodes, edges, depth, theme, activeNode, onNodeClick })
   const isCluster = node.data?.type === 'cluster'
   const isWorkspace = node.type === 'workspace'
   const isSelected = activeNode?.id === node.id
+  const isMobile = useIsMobile()
 
   return (
     <div className="flex flex-col">
@@ -21,29 +23,30 @@ const ListItem = ({ node, nodes, edges, depth, theme, activeNode, onNodeClick })
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         onClick={() => onNodeClick(node)}
-        className={`group flex items-center gap-3 py-2 px-3 rounded-xl cursor-pointer transition-all border ${
+        className={`group flex items-center gap-2 md:gap-3 min-h-[48px] md:min-h-0 py-2 px-2 md:px-3 rounded-xl cursor-pointer transition-all border ${
           isSelected 
             ? (theme === 'dark' ? 'bg-amber-500/20 border-amber-500/40 text-amber-500 shadow-lg shadow-amber-900/20' : 'bg-amber-100 border-amber-200 text-amber-700 shadow-sm')
             : (theme === 'dark' ? 'bg-transparent border-transparent hover:bg-amber-500/10 hover:border-amber-500/20 text-slate-400' : 'bg-transparent border-transparent hover:bg-amber-50/80 hover:border-amber-100 text-slate-500')
         }`}
-        style={{ marginLeft: `${depth * 20}px` }}
+        style={{ marginLeft: `${depth * (isMobile ? 14 : 20)}px` }}
       >
-        <div className="flex items-center gap-2 flex-1">
-          <div className="flex items-center justify-center w-5 h-5">
+        <div className="flex items-center gap-2 flex-1 min-w-0 md:min-w-[auto]">
+          <div className="flex items-center justify-center w-7 h-7 md:w-5 md:h-5 shrink-0 md:shrink">
             {children.length > 0 && (
               <button 
                 onClick={(e) => {
                   e.stopPropagation()
                   setIsOpen(!isOpen)
                 }}
-                className={`p-0.5 rounded hover:bg-slate-500/10 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}
+                aria-label={isOpen ? 'Collapse' : 'Expand'}
+                className={`w-7 h-7 flex items-center justify-center md:block md:w-auto md:h-auto p-0.5 rounded hover:bg-slate-500/10 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}
               >
                 <ChevronRight size={14} className={isSelected ? 'text-amber-500' : 'text-slate-400'} />
               </button>
             )}
           </div>
           
-          <div className={`flex items-center justify-center w-6 h-6 rounded-lg transition-colors ${
+          <div className={`flex items-center justify-center w-7 h-7 md:w-6 md:h-6 shrink-0 md:shrink rounded-lg transition-colors ${
             isSelected ? 'bg-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]' :
             isWorkspace ? 'bg-amber-500/10 text-amber-500' :
             isCluster ? 'bg-blue-500/10 text-blue-500' :
@@ -54,7 +57,7 @@ const ListItem = ({ node, nodes, edges, depth, theme, activeNode, onNodeClick })
              <FileText size={14} />}
           </div>
 
-          <span className={`text-[13px] font-bold tracking-tight transition-colors ${
+          <span className={`min-w-0 truncate md:min-w-[auto] md:overflow-visible md:whitespace-normal text-[14px] md:text-[13px] font-bold tracking-tight transition-colors ${
             isSelected 
               ? (theme === 'dark' ? 'text-amber-400' : 'text-amber-700')
               : (theme === 'dark' ? 'text-slate-200 group-hover:text-white' : 'text-[#0F172A]')
@@ -63,8 +66,8 @@ const ListItem = ({ node, nodes, edges, depth, theme, activeNode, onNodeClick })
           </span>
         </div>
 
-        <div className="transition-opacity">
-          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded transition-colors ${
+        <div className="transition-opacity shrink-0 md:shrink">
+          <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-wider md:tracking-widest px-1.5 md:px-2 py-1 rounded transition-colors ${
             isSelected 
               ? (theme === 'dark' ? 'text-amber-500 bg-amber-500/10' : 'text-amber-600 bg-amber-100')
               : (theme === 'dark' ? 'text-slate-500 bg-white/5' : 'text-slate-400 bg-slate-100')
@@ -117,12 +120,12 @@ const ListView = ({
   }
 
   return (
-    <div className={`w-full h-full p-8 pt-24 custom-scrollbar overflow-y-auto transition-colors duration-500 ${
+    <div className={`w-full h-full p-3 pt-[5.5rem] pb-6 md:p-8 md:pt-24 custom-scrollbar overflow-y-auto transition-colors duration-500 ${
       theme === 'dark' ? 'bg-[#0F172A]' : 'bg-white'
     }`}>
       <div className="max-w-3xl mx-auto flex flex-col gap-1">
-        <div className="mb-6 px-4">
-          <h1 className={`text-2xl font-black tracking-tight ${
+        <div className="mb-4 px-2 md:mb-6 md:px-4">
+          <h1 className={`text-xl md:text-2xl font-black tracking-tight ${
             theme === 'dark' ? 'text-white' : 'text-[#0F172A]'
           }`}>
             Architecture Manifest
