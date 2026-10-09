@@ -38,3 +38,4 @@ src-tauri/*.log
 
 # Local web-server database (PGlite)
 server/.data/
+backups/
