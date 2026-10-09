@@ -1,157 +1,132 @@
 import React from 'react'
-import { motion } from 'framer-motion'
-import { 
-  Compass, 
-  Map, 
-  Zap, 
-  MousePointer2, 
-  Layers, 
-  Database, 
-  ShieldCheck,
-  ChevronRight,
-  PlayCircle,
-  Lightbulb
+import {
+  Compass, X, LayoutGrid, Layers, FileText, Orbit, GitGraph, Box, List, Layout,
+  Search, MousePointer2, Move, ZoomIn, PanelRightOpen, Smartphone, LifeBuoy, MessageSquare, ChevronRight
 } from 'lucide-react'
+import { Page, Card, Grid, IconBadge, Button, tone } from '../components/ui/Page'
 
-const Guide = ({ theme, onClose }) => {
-  const steps = [
-    {
-      title: "Initialize Your Workspace",
-      desc: "Every great architecture starts with a foundation. Create your first Workspace to group related knowledge clusters.",
-      icon: Database,
-      color: "bg-blue-500"
-    },
-    {
-      title: "Map Your Clusters",
-      desc: "Use Clusters to create architectural boundaries. Think of them as high-level categories for your notes and ideas.",
-      icon: Layers,
-      color: "bg-purple-500"
-    },
-    {
-      title: "Orchestrate Nodes",
-      desc: "Nodes are the atomic units of your brain-space. Connect them in the Graph View to visualize complex relationships.",
-      icon: Zap,
-      color: "bg-amber-500"
-    },
-    {
-      title: "Secure Your Intellect",
-      desc: "Activate the Vault for sensitive data. Stratos uses military-grade local encryption to keep your thoughts private.",
-      icon: ShieldCheck,
-      color: "bg-indigo-500"
-    }
-  ]
+// How Stratos works: first steps, the graph views and the shortcuts that exist today
+const STEPS = [
+  { icon: LayoutGrid, color: 'amber', title: 'Create a workspace', text: 'A workspace holds one project. Open the workspace list with the S logo and choose Create workspace.' },
+  { icon: Layers, color: 'emerald', title: 'Add clusters', text: 'Clusters group related notes. Press + in the graph toolbar, pick Cluster and link it to the workspace.' },
+  { icon: FileText, color: 'sky', title: 'Write notes', text: 'Add a note under a cluster with +, then open it to write. Save draft keeps your changes.' },
+  { icon: Orbit, color: 'violet', title: 'Explore the graph', text: 'Every cluster and note becomes a node. Switch views to see your project as a graph, a chart or a list.' }
+]
+
+const VIEWS = [
+  { icon: Orbit, name: 'Graph', text: 'Colour-coded clusters laid out at equal angles around the workspace.' },
+  { icon: GitGraph, name: 'Chart', text: 'A tidy top-down tree of the workspace, its clusters and notes.' },
+  { icon: Box, name: 'Node', text: 'A free, force-directed map that highlights connections as you hover.' },
+  { icon: List, name: 'List', text: 'The same structure as an outline you can expand and collapse.' },
+  { icon: Layout, name: 'Board', text: 'Coming soon.' }
+]
+
+const TIPS = [
+  { icon: Search, title: 'Search anything', text: 'Press Ctrl K (⌘K on Mac) to search every note and cluster, then Enter to open it.', keys: ['Ctrl', 'K'] },
+  { icon: MousePointer2, title: 'Open a node', text: 'Click a node to open it in the editor. On a phone, tap once to focus it and again to open.' },
+  { icon: Move, title: 'Drag and let go', text: 'Pan the canvas by dragging the background; when you let go it glides back to fit everything.' },
+  { icon: ZoomIn, title: 'Zoom to read', text: 'Scroll or pinch to zoom. Titles fade in as you get closer.' },
+  { icon: PanelRightOpen, title: 'Side panel', text: 'Use the handle on the right edge of the graph to open or close the editor beside it.' },
+  { icon: Smartphone, title: 'On your phone', text: 'Use the bottom tabs to move around, the search icon at the top, and More for everything else.' }
+]
+
+function Kbd({ theme, children }) {
+  const t = tone(theme)
+  return (
+    <kbd className={`inline-flex items-center h-6 px-1.5 rounded-md border text-[11px] font-semibold ${t.inset} ${t.body}`}>{children}</kbd>
+  )
+}
+
+const Guide = ({ theme, onClose, onNavigate }) => {
+  const t = tone(theme)
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 1.02 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 1.02 }}
-      className="flex-1 flex flex-col h-full relative z-10 overflow-hidden"
+    <Page
+      theme={theme}
+      icon={Compass}
+      title="Guide"
+      subtitle="How Stratos works and how to get around"
+      actions={<Button theme={theme} icon={X} onClick={onClose} aria-label="Close guide">Close</Button>}
     >
-      {/* Background Aurora */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[140px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]"></div>
-      </div>
-
-      <header className="h-24 flex items-center justify-between px-10 shrink-0 border-b border-white/5 bg-white/2 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/20">
-            <Compass size={24} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter">Architectural <span className="text-amber-500">Manual</span></h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Mastering the Stratos Operating System</p>
-          </div>
+      {/* Getting started */}
+      <Card theme={theme} title="Getting started" subtitle="Four steps from an empty workspace to a connected graph">
+        <ol className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          {STEPS.map((step, i) => (
+            <li key={step.title} className={`flex gap-3 rounded-xl border p-3.5 md:p-4 ${t.inset}`}>
+              <IconBadge theme={theme} icon={step.icon} color={step.color} />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-semibold ${t.faint}`}>Step {i + 1}</span>
+                </div>
+                <h3 className="text-[14px] font-semibold leading-snug">{step.title}</h3>
+                <p className={`mt-1 text-[13px] leading-relaxed ${t.muted}`}>{step.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+          <Button theme={theme} variant="primary" icon={LayoutGrid} onClick={() => onNavigate?.('graph')}>Go to your spaces</Button>
         </div>
-        <button onClick={onClose} className="px-6 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold transition-all border border-white/10">Exit Manual</button>
-      </header>
+      </Card>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar p-10 py-20">
-        <div className="max-w-6xl mx-auto space-y-24">
-          
-          {/* Hero Section */}
-          <section className="text-center space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[10px] font-black uppercase tracking-widest mb-4">
-              <PlayCircle size={14} /> Technical Onboarding v2.1
-            </div>
-            <h2 className="text-6xl font-black tracking-tighter leading-tight max-w-4xl mx-auto">
-              Welcome to the future of <span className="text-blue-500">knowledge orchestration</span>.
-            </h2>
-            <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
-              This guide will help you navigate the Stratos ecosystem and optimize your architectural workflow.
-            </p>
-          </section>
-
-          {/* Core Concept Grid */}
-          <section className="grid grid-cols-2 gap-8">
-            {steps.map((step, idx) => (
-              <motion.div 
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="p-10 rounded-[3rem] border border-white/5 bg-white/2 backdrop-blur-xl group hover:border-white/10 transition-all flex gap-8 items-start"
-              >
-                <div className={`w-20 h-20 rounded-[2rem] ${step.color} flex items-center justify-center text-white shrink-0 shadow-2xl group-hover:scale-110 transition-transform`}>
-                  <step.icon size={36} />
+      <Grid cols="lg:grid-cols-2">
+        {/* Views */}
+        <Card theme={theme} title="Views" subtitle="Switch between them from the toolbar above the graph" padded={false}>
+          <ul>
+            {VIEWS.map((v, i) => (
+              <li key={v.name} className={`flex items-center gap-3 px-4 md:px-5 py-3 ${i ? `border-t ${t.divider}` : ''}`}>
+                <IconBadge theme={theme} icon={v.icon} color={v.name === 'Board' ? 'slate' : 'amber'} size="sm" />
+                <div className="min-w-0">
+                  <div className="text-[13.5px] font-semibold">{v.name}</div>
+                  <div className={`text-[12.5px] leading-snug ${t.muted}`}>{v.text}</div>
                 </div>
-                <div className="space-y-3">
-                  <h3 className="text-2xl font-black tracking-tight">{step.title}</h3>
-                  <p className="text-slate-500 font-medium leading-relaxed">{step.desc}</p>
-                  <button className="flex items-center gap-2 text-xs font-black text-blue-500 group-hover:gap-3 transition-all">
-                    Learn Protocol <ChevronRight size={14} />
-                  </button>
-                </div>
-              </motion.div>
+              </li>
             ))}
-          </section>
+          </ul>
+        </Card>
 
-          {/* Interaction Guide */}
-          <section className="p-16 rounded-[4rem] bg-gradient-to-br from-blue-600/10 via-transparent to-transparent border border-blue-500/10 relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-16 opacity-10">
-               <MousePointer2 size={300} strokeWidth={0.5} />
-             </div>
-             
-             <div className="max-w-2xl space-y-10">
-               <div className="space-y-4">
-                 <div className="flex items-center gap-2 text-amber-500">
-                   <Lightbulb size={24} />
-                   <span className="text-sm font-black uppercase tracking-widest">Pro Tip</span>
-                 </div>
-                 <h3 className="text-4xl font-black tracking-tighter">The Power of the <span className="text-blue-500">Command Bar</span>.</h3>
-                 <p className="text-lg text-slate-400 font-medium leading-relaxed">
-                   Hover over the top-left of the Graph View to reveal the Command Bar. From here, you can switch between 
-                   <span className="text-white"> Chart, Node, and List</span> engines instantly. Use it to architect your brain-space with surgical precision.
-                 </p>
-               </div>
-               
-               <div className="grid grid-cols-2 gap-6">
-                 <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
-                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Right Click</div>
-                   <div className="text-sm font-bold text-white">Spawn context-aware node menu</div>
-                 </div>
-                 <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
-                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Drag & Drop</div>
-                   <div className="text-sm font-bold text-white">Reorganize architectural hierarchy</div>
-                 </div>
-               </div>
-             </div>
-          </section>
+        {/* Tips */}
+        <Card theme={theme} title="Tips and shortcuts" subtitle="Small things that make Stratos faster" padded={false}>
+          <ul>
+            {TIPS.map((tip, i) => (
+              <li key={tip.title} className={`flex gap-3 px-4 md:px-5 py-3 ${i ? `border-t ${t.divider}` : ''}`}>
+                <IconBadge theme={theme} icon={tip.icon} color="slate" size="sm" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13.5px] font-semibold">{tip.title}</span>
+                    {tip.keys && (
+                      <span className="hidden sm:flex items-center gap-1 shrink-0">
+                        {tip.keys.map(k => <Kbd key={k} theme={theme}>{k}</Kbd>)}
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-[12.5px] leading-snug ${t.muted}`}>{tip.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </Grid>
 
-          {/* Footer Guide */}
-          <section className="text-center py-20 space-y-8">
-            <h3 className="text-2xl font-black tracking-tight">Need deeper assistance?</h3>
-            <div className="flex gap-4 justify-center">
-              <button className="px-10 py-4 bg-blue-600 rounded-2xl font-bold shadow-xl shadow-blue-600/20 hover:scale-105 transition-all">Visit Support Nexus</button>
-              <button className="px-10 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all">Watch Technical Demo</button>
-            </div>
-            <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.4em] pt-10">Stratos Guide • Revision 2.1.0 • May 2026</p>
-          </section>
-
+      {/* Help */}
+      <Card theme={theme} padded={false}>
+        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-5 p-4 md:p-5">
+          <IconBadge theme={theme} icon={LifeBuoy} color="sky" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[14px] font-semibold">Need more help?</h2>
+            <p className={`text-[13px] ${t.muted}`}>Browse the help articles, or tell us what's missing.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button theme={theme} icon={LifeBuoy} className="flex-1 md:flex-none h-10 md:h-9" onClick={() => onNavigate?.('help')}>
+              Help <ChevronRight size={14} />
+            </Button>
+            <Button theme={theme} icon={MessageSquare} className="flex-1 md:flex-none h-10 md:h-9" onClick={() => onNavigate?.('feedback')}>
+              Send feedback
+            </Button>
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </Card>
+    </Page>
   )
 }
 

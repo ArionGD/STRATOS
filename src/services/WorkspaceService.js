@@ -1,12 +1,10 @@
 /**
  * Stratos Workspace Service
- * Manages project containers and synchronization across Desktop (SQLite) and Browser (Dexie).
+ * Manages project containers and synchronization across Desktop (SQLite) and Web (Stratos API).
  */
 import { invoke } from '@tauri-apps/api/core'
 import useUserStore from '../store/useUserStore'
-import { browserDB } from './BrowserDB'
-
-const isTauri = !!window.__TAURI_INTERNALS__;
+import { WebApi, isTauri } from './WebApi'
 
 export const WorkspaceService = {
   // Initialize and fetch all workspaces
@@ -23,16 +21,11 @@ export const WorkspaceService = {
         return [];
       }
     } else {
-      // BROWSER MODE: Use Dexie
+      // WEB MODE: Stratos API (scoped to the signed-in account)
       try {
-        const workspaces = await browserDB.workspaces
-          .where('user_id')
-          .equals(user.id)
-          .toArray();
-        console.log('🏗️ Workspaces Synced from Browser DB:', workspaces);
-        return workspaces;
+        return await WebApi.get('/workspaces');
       } catch (err) {
-        console.error('Browser Sync Error:', err);
+        console.error('Web Sync Error:', err);
         return [];
       }
     }
@@ -46,7 +39,9 @@ export const WorkspaceService = {
     const newWS = {
       id: `ws_${Date.now()}`,
       name: name,
-      user_id: user.id
+      user_id: user.id,
+      role: 'owner',
+      member_count: 1
     };
 
     if (isTauri) {
@@ -60,12 +55,11 @@ export const WorkspaceService = {
         console.error('Failed to persist workspace:', err);
       }
     } else {
-      // BROWSER MODE: Use Dexie
+      // WEB MODE: Stratos API
       try {
-        await browserDB.workspaces.add(newWS);
-        console.log('✅ Workspace Persisted to Browser DB');
+        await WebApi.post('/workspaces', { id: newWS.id, name: newWS.name });
       } catch (err) {
-        console.error('Dexie Workspace Error:', err);
+        console.error('Web Workspace Error:', err);
       }
     }
 
@@ -85,14 +79,42 @@ export const WorkspaceService = {
         return { success: false, error: err };
       }
     } else {
-      // BROWSER MODE: Use Dexie
+      // WEB MODE: Stratos API
       try {
-        await browserDB.clusters.add(clusterData);
+        await WebApi.post('/clusters', clusterData);
         return { success: true };
       } catch (err) {
-        console.error('Dexie Cluster Error:', err);
+        console.error('Web Cluster Error:', err);
         return { success: false, error: err };
       }
     }
-  }
+  },
+
+  renameWorkspace: async (id, name) => run(() => isTauri
+    ? invoke('rename_workspace', { id, name })
+    : WebApi.patch(`/workspaces/${encodeURIComponent(id)}`, { name })),
+
+  // Deletes the workspace with all its clusters, notes and chats
+  deleteWorkspace: async (id) => run(() => isTauri
+    ? invoke('delete_workspace', { id })
+    : WebApi.del(`/workspaces/${encodeURIComponent(id)}`)),
+
+  renameCluster: async (id, name) => run(() => isTauri
+    ? invoke('rename_cluster', { id, name })
+    : WebApi.patch(`/clusters/${encodeURIComponent(id)}`, { name })),
+
+  // Deletes the cluster; its notes move up to the cluster's parent
+  deleteCluster: async (id) => run(() => isTauri
+    ? invoke('delete_cluster', { id })
+    : WebApi.del(`/clusters/${encodeURIComponent(id)}`))
 };
+
+async function run(fn) {
+  try {
+    await fn();
+    return { success: true };
+  } catch (err) {
+    console.error('Workspace operation failed:', err);
+    return { success: false, error: err };
+  }
+}

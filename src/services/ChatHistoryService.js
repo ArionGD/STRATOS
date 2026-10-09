@@ -1,12 +1,10 @@
 /**
  * Stratos METIS Conversation & Chat History Service
  * Manages full conversation threads (max 3 per workspace, max 20 messages/10 turns per thread)
- * with auto-naming capabilities. Synchronizes between Tauri SQLite and Browser Dexie DB.
+ * with auto-naming capabilities. Synchronizes between Tauri SQLite and the Stratos web API.
  */
 import { invoke } from '@tauri-apps/api/core'
-import { browserDB } from './BrowserDB'
-
-const isTauri = !!window.__TAURI_INTERNALS__;
+import { WebApi, isTauri } from './WebApi'
 
 export const ChatHistoryService = {
   // Saves or updates a conversation thread with its full array of messages
@@ -40,20 +38,15 @@ export const ChatHistoryService = {
       updated_at: timestamp
     };
 
-    let existingConv = false;
-    try {
-      if (isTauri) {
+    if (isTauri) {
+      let existingConv = false;
+      try {
         const list = await invoke('list_conversations', { workspace_id: params.workspace_id });
         existingConv = (list || []).some(c => c.id === conversationId);
-      } else {
-        const item = await browserDB.conversations.get(conversationId);
-        existingConv = !!item;
+      } catch (err) {
+        console.warn('Failed to query existing conversation status:', err);
       }
-    } catch (err) {
-      console.warn('Failed to query existing conversation status:', err);
-    }
 
-    if (isTauri) {
       try {
         // Enforce 3 conversations limit before adding new one in SQLite
         if (!existingConv) {
@@ -70,48 +63,27 @@ export const ChatHistoryService = {
         return { success: false, error: err };
       }
     } else {
-      // BROWSER MODE: Sync via Dexie IndexedDB
+      // WEB MODE: Stratos API (server enforces the 3-thread limit per workspace)
       try {
-        if (!existingConv) {
-          // Enforce 3 conversations limit before adding new one
-          const workspaceConvs = await browserDB.conversations
-            .where('workspace_id')
-            .equals(params.workspace_id)
-            .toArray();
-
-          if (workspaceConvs.length >= 3) {
-            return { success: false, error: 'limit_reached' };
-          }
-
-          // Insert new conversation thread
-          await browserDB.conversations.add({
-            id: conversationId,
-            workspace_id: params.workspace_id,
-            user_id: params.user_id,
-            workspace_name: params.workspace_name,
-            title: params.title,
-            messages_json: params.messages_json,
-            updated_at: timestamp
-          });
-        } else {
-          // Update conversation
-          await browserDB.conversations.update(conversationId, { 
-            title: params.title,
-            messages_json: params.messages_json,
-            updated_at: timestamp 
-          });
-        }
-
-        console.log('🤖 METIS Thread Synced to Browser IndexedDB (Max 3 Threads & Max 20 Messages Enforced)');
+        await WebApi.put(`/conversations/${encodeURIComponent(conversationId)}`, {
+          workspace_id: params.workspace_id,
+          workspace_name: params.workspace_name,
+          title: params.title,
+          messages_json: params.messages_json,
+          updated_at: timestamp
+        });
         return { success: true };
       } catch (err) {
-        console.error('Browser Dexie Conversation Save Error:', err);
+        if (err.message === 'limit_reached') {
+          return { success: false, error: 'limit_reached' };
+        }
+        console.error('Web Conversation Save Error:', err);
         return { success: false, error: err };
       }
     }
   },
 
-  // Deletes a conversation thread from SQLite and Dexie
+  // Deletes a conversation thread from SQLite or the web API
   deleteConversation: async (conversationId) => {
     if (isTauri) {
       try {
@@ -124,11 +96,10 @@ export const ChatHistoryService = {
       }
     } else {
       try {
-        await browserDB.conversations.delete(conversationId);
-        console.log('🗑️ METIS Conversation Deleted from IndexedDB');
+        await WebApi.del(`/conversations/${encodeURIComponent(conversationId)}`);
         return { success: true };
       } catch (err) {
-        console.error('Browser Dexie Delete Error:', err);
+        console.error('Web Conversation Delete Error:', err);
         return { success: false, error: err };
       }
     }
@@ -145,18 +116,15 @@ export const ChatHistoryService = {
         return [];
       }
     } else {
-      // BROWSER MODE: Fetch from Dexie IndexedDB
+      // WEB MODE: Stratos API
       try {
-        const convs = await browserDB.conversations
-          .where('workspace_id')
-          .equals(workspaceId)
-          .toArray();
+        const convs = await WebApi.get(`/conversations?workspace_id=${encodeURIComponent(workspaceId)}`);
 
         // Sort by updated_at descending
         convs.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
         return convs;
       } catch (err) {
-        console.error('Failed to fetch conversations from IndexedDB:', err);
+        console.error('Failed to fetch conversations from web API:', err);
         return [];
       }
     }

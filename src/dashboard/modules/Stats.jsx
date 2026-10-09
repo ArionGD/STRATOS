@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  BarChart2, 
-  Activity, 
-  Zap, 
-  TrendingUp, 
-  Clock, 
-  Target, 
-  Folder, 
-  Layers, 
-  BookOpen, 
-  MessageSquare,
-  Award,
-  Cpu
-} from 'lucide-react'
+import { BarChart2, Folder, Layers, FileText, Type, Loader2 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
-import { browserDB } from '../../services/BrowserDB'
+import { WebApi } from '../../services/WebApi'
+import { Page, Card, StatTile, ProgressBar, EmptyState, tone } from '../components/ui/Page'
+import { CLUSTER_COLORS, ROOT_COLOR } from '../components/graph/palette'
+import { noteText } from '../../utils/noteContent'
 
 const Stats = ({ theme }) => {
   const isDark = theme === 'dark';
@@ -70,7 +59,7 @@ const Stats = ({ theme }) => {
             
             // Calculate word counts and check content presence
             for (const note of (notes || [])) {
-              const content = note.content || '';
+              const content = noteText(note.content);
               if (content.trim()) {
                 notesWithContent++;
               }
@@ -79,12 +68,13 @@ const Stats = ({ theme }) => {
             }
 
             // Build sectors/clusters detail
-            for (const cluster of (clusters || [])) {
+            for (const [ci, cluster] of (clusters || []).entries()) {
               const clusterNotes = (notes || []).filter(n => n.parent_id === cluster.id).length;
               topSectors.push({
                 label: cluster.name,
                 value: clusterNotes,
-                totalWorkspace: ws.name
+                totalWorkspace: ws.name,
+                color: CLUSTER_COLORS[ci % CLUSTER_COLORS.length]
               });
             }
 
@@ -95,12 +85,13 @@ const Stats = ({ theme }) => {
             totalConvsCount += (convList || []).length;
           }
         } else {
-          // Browser IndexedDB mode
-          allWorkspaces = await browserDB.workspaces.toArray();
+          // Web Mode: Stratos API
+          const overview = await WebApi.get('/overview');
+          allWorkspaces = overview.workspaces;
           
           for (const ws of allWorkspaces) {
-            const clusters = await browserDB.clusters.where('workspace_id').equals(ws.id).toArray();
-            const notes = await browserDB.notes.where('workspace_id').equals(ws.id).toArray();
+            const clusters = overview.clusters.filter(c => c.workspace_id === ws.id);
+            const notes = overview.notes.filter(n => n.workspace_id === ws.id);
             
             ws.clustersCount = (clusters || []).length;
             ws.notesCount = (notes || []).length;
@@ -109,7 +100,7 @@ const Stats = ({ theme }) => {
             totalNotesCount += ws.notesCount;
 
             for (const note of (notes || [])) {
-              const content = note.content || '';
+              const content = noteText(note.content);
               if (content.trim()) {
                 notesWithContent++;
               }
@@ -117,19 +108,19 @@ const Stats = ({ theme }) => {
               totalWordsCount += words;
             }
 
-            for (const cluster of (clusters || [])) {
+            for (const [ci, cluster] of (clusters || []).entries()) {
               const clusterNotes = (notes || []).filter(n => n.parent_id === cluster.id).length;
               topSectors.push({
                 label: cluster.name,
                 value: clusterNotes,
-                totalWorkspace: ws.name
+                totalWorkspace: ws.name,
+                color: CLUSTER_COLORS[ci % CLUSTER_COLORS.length]
               });
             }
           }
 
           // Conversations count
-          const allConvs = await browserDB.conversations.toArray();
-          totalConvsCount = (allConvs || []).length;
+          totalConvsCount = overview.conversations.length;
         }
       } catch (err) {
         console.error('Failed to load real stats:', err);
@@ -142,19 +133,11 @@ const Stats = ({ theme }) => {
           label: s.label,
           value: Math.round((s.value / totalNotes) * 100),
           workspace: s.totalWorkspace,
-          rawNotes: s.value
+          rawNotes: s.value,
+          color: s.color
         }))
         .sort((a, b) => b.rawNotes - a.rawNotes)
-        .slice(0, 3);
-
-      // Fallbacks if no data exists yet
-      if (processedSectors.length === 0) {
-        processedSectors.push(
-          { label: 'Neural Networks', value: 75, workspace: 'Stratos Demo', rawNotes: 3 },
-          { label: 'Bio-Architecture', value: 50, workspace: 'Stratos Demo', rawNotes: 2 },
-          { label: 'Quantum Ethics', value: 25, workspace: 'Stratos Demo', rawNotes: 1 }
-        );
-      }
+        .slice(0, 5);
 
       const endTime = performance.now();
       const loadTimeMs = Math.round(endTime - startTime);
@@ -171,8 +154,9 @@ const Stats = ({ theme }) => {
         totalConversations: totalConvsCount,
         totalWords: totalWordsCount,
         syncVelocity,
-        brainDensity: brainDensity || 84, // fallback to 84 if no content yet
+        brainDensity,
         focusTime: `${focusTimeHours}h`,
+        readMinutes: Math.round(totalWordsCount / 220),
         sectors: processedSectors
       });
       setLoading(false);
@@ -181,316 +165,277 @@ const Stats = ({ theme }) => {
     fetchStats();
   }, []);
 
-  const metrics = [
-    { label: 'Total Workspaces', value: stats.totalWorkspaces, icon: Folder, color: 'text-amber-500' },
-    { label: 'Sync Velocity', value: stats.syncVelocity, icon: Activity, color: 'text-blue-500' },
-    { label: 'Brain Density', value: `${stats.brainDensity}%`, icon: TrendingUp, color: 'text-purple-500' },
-    { label: 'Focus Time', value: stats.focusTime, icon: Clock, color: 'text-green-500' },
-  ];
+  const t = tone(theme);
+  const fmt = (n) => Number(n || 0).toLocaleString();
+  const avgPerCluster = stats.totalClusters ? (stats.totalNotes / stats.totalClusters) : 0;
+
+  const header = {
+    theme,
+    icon: BarChart2,
+    title: 'Stats',
+    subtitle: 'How your spaces are growing'
+  };
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
-        <div className="relative flex items-center justify-center">
-          <div className="absolute w-24 h-24 rounded-full border border-blue-500/20 animate-ping"></div>
-          <div className="relative w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
-            <Cpu size={20} className="animate-spin" />
-          </div>
+      <Page {...header}>
+        <div className={`py-24 flex flex-col items-center gap-3 ${t.muted}`}>
+          <Loader2 size={22} className="animate-spin text-amber-500" />
+          <span className="text-[13px]">Counting your notes…</span>
         </div>
-        <div className="text-center space-y-1.5">
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-400">
-            AUDITING COGNITIVE ECOSYSTEM
-          </h3>
-          <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
-            Compiling relational workspace nodes...
-          </p>
-        </div>
-      </div>
+      </Page>
+    );
+  }
+
+  if (stats.workspaces.length === 0) {
+    return (
+      <Page {...header}>
+        <Card theme={theme}>
+          <EmptyState
+            theme={theme}
+            icon={Folder}
+            title="No workspaces yet"
+            text="Create a workspace and add a few notes, and your stats will show up here."
+          />
+        </Card>
+      </Page>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`flex-1 overflow-y-auto no-scrollbar p-10 space-y-10 ${
-        isDark ? 'text-white' : 'text-slate-800'
-      }`}
-    >
-      <header className="space-y-2">
-        <h1 className="text-4xl font-black tracking-tighter uppercase">
-          Architectural <span className="text-blue-600">Analytics</span>
-        </h1>
-        <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
-          Measuring your cognitive ecosystem expansion
-        </p>
-      </header>
-
-      {/* Core Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {metrics.map((m, idx) => (
-          <div 
-            key={idx} 
-            className={`p-8 rounded-[2.5rem] border transition-all ${
-              isDark 
-                ? 'border-white/5 bg-white/2 hover:border-blue-500/30' 
-                : 'border-slate-200 bg-white hover:border-blue-500/20 shadow-sm'
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${
-              isDark ? 'bg-white/5' : 'bg-slate-50 border border-slate-100'
-            } ${m.color}`}>
-              <m.icon size={24} />
-            </div>
-            <div className="text-3xl font-black mb-1">{m.value}</div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{m.label}</span>
-              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
-                ACTIVE
-              </span>
-            </div>
-          </div>
-        ))}
+    <Page {...header}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <StatTile
+          theme={theme} icon={Folder} color="amber" label="Workspaces"
+          value={fmt(stats.totalWorkspaces)}
+          hint={`${fmt(stats.totalConversations)} conversation${stats.totalConversations === 1 ? '' : 's'}`}
+        />
+        <StatTile
+          theme={theme} icon={FileText} color="sky" label="Notes"
+          value={fmt(stats.totalNotes)}
+          hint={`${stats.brainDensity}% have content`}
+        />
+        <StatTile
+          theme={theme} icon={Layers} color="emerald" label="Clusters"
+          value={fmt(stats.totalClusters)}
+          hint={stats.totalClusters ? `${avgPerCluster.toFixed(1)} notes per cluster` : 'None yet'}
+        />
+        <StatTile
+          theme={theme} icon={Type} color="violet" label="Words written"
+          value={fmt(stats.totalWords)}
+          hint={`About ${fmt(Math.max(stats.readMinutes, stats.totalWords ? 1 : 0))} min to read`}
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Workspace Density Chart */}
-        <div className={`lg:col-span-2 p-10 rounded-[3rem] border relative overflow-hidden flex flex-col justify-between min-h-[400px] ${
-          isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className="space-y-2">
-            <h2 className="text-xl font-black uppercase tracking-widest">Workspace Density</h2>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Stacked node composition (Clusters vs. Notes) per active environment</p>
-          </div>
-          
-          <div className="relative flex-1 flex items-stretch mt-8 min-h-[220px]">
-            {/* Y-Axis Labels */}
-            <div className="w-12 flex flex-col justify-between text-[9px] font-black text-slate-500 pr-2 border-r border-slate-500/10 py-1">
-              <span>{Math.max(...stats.workspaces.map(w => w.clustersCount + w.notesCount), 10)} Nodes</span>
-              <span>75%</span>
-              <span>50%</span>
-              <span>25%</span>
-              <span>0 Nodes</span>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        <Card
+          theme={theme}
+          className="lg:col-span-2 min-w-0"
+          title="Notes per workspace"
+          subtitle="Notes and clusters in each workspace"
+          action={<div className="hidden sm:block"><Legend theme={theme} /></div>}
+        >
+          <WorkspaceBars theme={theme} workspaces={stats.workspaces} />
+        </Card>
 
-            {/* Grid Area */}
-            <div className="flex-1 relative ml-4 flex items-end">
-              {/* Background Grid Lines */}
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-1">
-                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
-                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
-                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
-                <div className={`h-[1px] w-full ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}></div>
-                <div className={`h-[1px] w-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}></div>
-              </div>
-
-              {/* Stacked Columns Container */}
-              <div className="absolute inset-0 flex justify-center items-end gap-12 px-6 py-1">
-                {stats.workspaces.map((ws, i) => {
-                  const clustersVal = ws.clustersCount || 0;
-                  const notesVal = ws.notesCount || 0;
-                  const totalVal = clustersVal + notesVal;
-                  
-                  const maxCount = Math.max(...stats.workspaces.map(w => w.clustersCount + w.notesCount), 10);
-                  
-                  // Calculate absolute heights in percentage
-                  const totalPercent = Math.max(15, Math.round((totalVal / maxCount) * 100));
-                  const notesPercent = Math.round((notesVal / (totalVal || 1)) * 100);
-                  const clustersPercent = 100 - notesPercent;
-
-                  return (
-                    <div key={ws.id} className="w-20 flex flex-col items-center gap-2 group h-full justify-end relative z-10">
-                      {/* Detailed floating popup */}
-                      <div className={`absolute bottom-full mb-2 px-3 py-2 rounded-xl border flex flex-col gap-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100 shadow-xl z-50 text-[10px] w-36 ${
-                        isDark 
-                          ? 'bg-slate-950/95 backdrop-blur-md border-white/10 text-white' 
-                          : 'bg-white border-slate-200 text-slate-800 shadow-slate-900/10'
-                      }`}>
-                        <div className="font-black uppercase tracking-wider text-[9px] border-b border-white/5 pb-1 mb-1 truncate text-blue-400">
-                          {ws.name}
-                        </div>
-                        <div className="flex justify-between font-bold">
-                          <span className="text-slate-500">Clusters:</span>
-                          <span className="text-amber-400">{clustersVal}</span>
-                        </div>
-                        <div className="flex justify-between font-bold">
-                          <span className="text-slate-500">Notes:</span>
-                          <span className="text-cyan-400">{notesVal}</span>
-                        </div>
-                        <div className="flex justify-between font-black border-t border-white/5 pt-1 mt-1 text-white">
-                          <span>Total:</span>
-                          <span>{totalVal} Nodes</span>
-                        </div>
-                      </div>
-
-                      {/* Stacked Column Block */}
-                      <div 
-                        style={{ height: `${totalPercent}%` }}
-                        className="w-12 rounded-t-xl overflow-hidden flex flex-col justify-end shadow-2xl relative transition-transform duration-300 hover:scale-105"
-                      >
-                        {/* Upper cluster segment (amber) */}
-                        {clustersVal > 0 && (
-                          <div 
-                            style={{ height: `${clustersPercent}%` }}
-                            className="w-full bg-gradient-to-b from-amber-400 to-amber-600 relative group-hover:brightness-110 transition-all animate-[pulse_6s_infinite]"
-                            title={`${clustersVal} Clusters`}
-                          />
-                        )}
-                        {/* Lower note segment (blue) */}
-                        {notesVal > 0 && (
-                          <div 
-                            style={{ height: `${notesPercent}%` }}
-                            className="w-full bg-gradient-to-b from-blue-500 to-indigo-600 relative group-hover:brightness-110 transition-all border-t border-white/10"
-                            title={`${notesVal} Notes`}
-                          />
-                        )}
-                      </div>
-
-                      {/* Label below */}
-                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 truncate w-full text-center mt-2">
-                        {ws.name}
-                      </span>
-                    </div>
-                  );
-                })}
-                {stats.workspaces.length === 0 && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-500 h-full w-full">
-                    <Cpu size={40} className="text-slate-600 animate-pulse mb-3" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">No Active Workspaces Found</span>
+        <Card theme={theme} className="min-w-0" title="Top clusters" subtitle="Share of all notes">
+          {stats.sectors.length === 0 ? (
+            <EmptyState theme={theme} icon={Layers} title="No clusters yet" text="Group notes into clusters to see which ones are growing." />
+          ) : (
+            <ul className="space-y-4">
+              {stats.sectors.map((s, idx) => (
+                <li key={idx} className="min-w-0">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 shrink-0 rounded-full" style={{ background: s.color }} />
+                      <span className="text-[13.5px] font-medium truncate">{s.label}</span>
+                    </span>
+                    <span className="text-[13px] font-bold tabular-nums shrink-0">{s.value}%</span>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Graph Legend */}
-          <div className="flex justify-end gap-6 text-[9px] font-black uppercase tracking-wider text-slate-500 mt-6 pt-4 border-t border-slate-500/5">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded bg-gradient-to-b from-amber-400 to-amber-600" />
-              <span>Clusters</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded bg-gradient-to-b from-blue-500 to-indigo-600" />
-              <span>Notes</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Sectors Card */}
-        <div className={`p-10 rounded-[3rem] border flex flex-col justify-between ${
-          isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className="space-y-2">
-            <h2 className="text-xl font-black uppercase tracking-widest">Top Sectors</h2>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Most active knowledge clusters</p>
-          </div>
-          <div className="space-y-6 my-6">
-            {stats.sectors.map((s, idx) => {
-              const colors = ['bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
-              return (
-                <div key={idx} className="space-y-2">
-                  <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
-                    <span>{s.label}</span>
-                    <span className="text-slate-500">{s.value}%</span>
+                  <div className="mt-2">
+                    <ProgressBar theme={theme} value={s.value} color={s.color} />
                   </div>
-                  <div className={`h-2 rounded-full overflow-hidden ${
-                    isDark ? 'bg-white/5' : 'bg-slate-100'
-                  }`}>
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${s.value}%` }}
-                      className={`h-full ${colors[idx % colors.length]}`}
-                    ></motion.div>
+                  <div className={`mt-1.5 text-[12px] truncate ${t.muted}`}>
+                    {s.workspace} · {s.rawNotes} note{s.rawNotes === 1 ? '' : 's'}
                   </div>
-                  <div className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">
-                    {s.workspace} • {s.rawNotes} Notes
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className={`w-full py-4 text-center rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] border ${
-            isDark 
-              ? 'bg-white/5 border-white/10 text-slate-300' 
-              : 'bg-slate-50 border-slate-200 text-slate-600'
-          }`}>
-            Cluster Density Calibrated
-          </div>
-        </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
 
-      {/* Workspace Registry Detail Table */}
-      <div className={`p-10 rounded-[3rem] border space-y-6 ${
-        isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
-      }`}>
-        <div className="space-y-2">
-          <h2 className="text-xl font-black uppercase tracking-widest">Workspace Registry</h2>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-            Relational density audit of active environments
-          </p>
-        </div>
-
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b text-[9px] font-black uppercase tracking-widest text-slate-500 border-slate-500/10">
-                <th className="py-4">Workspace Environment</th>
-                <th className="py-4 text-center">Knowledge Clusters</th>
-                <th className="py-4 text-center">Structured Notes</th>
-                <th className="py-4 text-center">Total Nodes</th>
-                <th className="py-4 text-right">Expansion Density</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.workspaces.map((ws, idx) => {
-                const totalNodes = ws.clustersCount + ws.notesCount;
-                const densityPercent = Math.min(100, Math.round((totalNodes / 15) * 100)); // target of 15 nodes
-                return (
-                  <tr 
-                    key={ws.id} 
-                    className={`border-b text-xs font-bold transition-colors ${
-                      isDark ? 'border-white/5 hover:bg-white/2' : 'border-slate-100 hover:bg-slate-50'
-                    }`}
-                  >
-                    <td className="py-4 flex items-center gap-3">
-                      <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400">
-                        <Folder size={14} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-black uppercase tracking-wide">{ws.name}</div>
-                        <div className="text-[9px] text-slate-500 font-medium font-mono">{ws.id}</div>
-                      </div>
-                    </td>
-                    <td className="py-4 text-center font-black">{ws.clustersCount}</td>
-                    <td className="py-4 text-center font-black">{ws.notesCount}</td>
-                    <td className="py-4 text-center font-black text-blue-400">{totalNodes}</td>
-                    <td className="py-4 text-right">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                        densityPercent > 75 
-                          ? 'bg-emerald-500/10 text-emerald-400' 
-                          : densityPercent > 40 
-                            ? 'bg-blue-500/10 text-blue-400' 
-                            : 'bg-amber-500/10 text-amber-400'
-                      }`}>
-                        {densityPercent}% Density
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-              {stats.workspaces.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="py-8 text-center text-slate-500 font-bold uppercase tracking-widest text-xs">
-                    Please create a workspace to view detailed analytics.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </motion.div>
+      <Card
+        theme={theme}
+        padded={false}
+        title="Workspaces"
+        subtitle={`${fmt(stats.totalWorkspaces)} total · loaded in ${stats.syncVelocity}`}
+      >
+        <WorkspaceTable theme={theme} workspaces={stats.workspaces} totalNotes={stats.totalNotes} />
+      </Card>
+    </Page>
   )
+}
+
+const NOTES_COLOR = ROOT_COLOR;          // amber, the brand accent
+const CLUSTERS_COLOR = CLUSTER_COLORS[3]; // sky, distinct from amber for colour-blind readers
+
+function Legend({ theme }) {
+  const t = tone(theme);
+  return (
+    <div className={`flex items-center gap-3 text-[12px] ${t.muted}`}>
+      <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: NOTES_COLOR }} />Notes</span>
+      <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: CLUSTERS_COLOR }} />Clusters</span>
+    </div>
+  );
+}
+
+// Round the axis maximum up to a tidy number and return evenly spaced ticks
+function niceTicks(max) {
+  const raw = Math.max(1, max) / 4;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 5, 10].map(m => m * pow).find(s => s >= raw) || raw;
+  const top = Math.max(step, Math.ceil(max / step) * step);
+  const ticks = [];
+  for (let v = 0; v <= top + 1e-9; v += step) ticks.push(Math.round(v));
+  return { top, ticks };
+}
+
+// Horizontal stacked bars: workspace name, notes + clusters, totals on the right
+function WorkspaceBars({ theme, workspaces }) {
+  const t = tone(theme);
+  const max = Math.max(...workspaces.map(w => (w.notesCount || 0) + (w.clustersCount || 0)), 1);
+  const { top, ticks } = niceTicks(max);
+  const grid = t.dark ? 'bg-white/[0.07]' : 'bg-slate-100';
+  const cols = 'sm:grid sm:grid-cols-[140px_minmax(0,1fr)_88px] sm:items-center sm:gap-3';
+
+  return (
+    <div className="pt-1">
+      <div className="relative">
+        {/* Vertical grid lines, aligned to the bar column */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 sm:left-[152px] sm:right-[100px]">
+          {ticks.map((v) => (
+            <span key={v} className={`absolute inset-y-0 w-px ${v === 0 ? (t.dark ? 'bg-white/15' : 'bg-slate-300') : grid}`} style={{ left: `${(v / top) * 100}%` }} />
+          ))}
+        </div>
+
+        <ul className="relative space-y-4 sm:space-y-0 sm:min-h-[200px] sm:flex sm:flex-col sm:justify-center sm:gap-5 sm:py-2">
+          {workspaces.map((ws) => {
+            const notes = ws.notesCount || 0;
+            const clusters = ws.clustersCount || 0;
+            return (
+              <li key={ws.id} className={cols} title={`${ws.name}: ${notes} notes, ${clusters} clusters`}>
+                <div className="flex items-baseline justify-between gap-3 mb-1.5 sm:mb-0 min-w-0">
+                  <span className="text-[13px] font-medium truncate">{ws.name}</span>
+                  <span className={`sm:hidden shrink-0 text-[12px] tabular-nums ${t.muted}`}>
+                    <b className={t.text}>{notes}</b> notes · <b className={t.text}>{clusters}</b> clusters
+                  </span>
+                </div>
+                <div className={`h-5 sm:h-7 flex items-stretch gap-[2px]`}>
+                  {notes > 0 && (
+                    <div className="h-full rounded-r-[4px] transition-[width] duration-700" style={{ width: `${(notes / top) * 100}%`, background: NOTES_COLOR }} />
+                  )}
+                  {clusters > 0 && (
+                    <div className="h-full rounded-r-[4px] transition-[width] duration-700" style={{ width: `${(clusters / top) * 100}%`, background: CLUSTERS_COLOR }} />
+                  )}
+                </div>
+                <div className={`hidden sm:block text-right text-[12px] tabular-nums ${t.muted}`}>
+                  <b className={`text-[13px] ${t.text}`}>{notes}</b> / {clusters}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* X axis */}
+      <div className={`mt-2 ${cols}`}>
+        <span className="hidden sm:block" />
+        <div className={`relative h-4 text-[11px] tabular-nums ${t.faint}`}>
+          {ticks.map((v, i) => (
+            <span
+              key={v}
+              className="absolute top-0"
+              style={{ left: `${(v / top) * 100}%`, transform: i === 0 ? 'none' : i === ticks.length - 1 ? 'translateX(-100%)' : 'translateX(-50%)' }}
+            >
+              {v}
+            </span>
+          ))}
+        </div>
+        <span className={`hidden sm:block text-right text-[11px] ${t.faint}`}>notes / clusters</span>
+      </div>
+      <div className={`sm:hidden mt-3 pt-3 border-t ${t.divider}`}><Legend theme={theme} /></div>
+    </div>
+  );
+}
+
+function WorkspaceTable({ theme, workspaces, totalNotes }) {
+  const t = tone(theme);
+  const share = (ws) => Math.round(((ws.notesCount || 0) / (totalNotes || 1)) * 100);
+  const th = `py-2.5 text-[11px] font-medium ${t.faint}`;
+
+  return (
+    <>
+      {/* Phone: compact rows */}
+      <ul className={`md:hidden divide-y ${t.dark ? 'divide-white/10' : 'divide-slate-100'}`}>
+        {workspaces.map((ws) => (
+          <li key={ws.id} className="px-4 py-3 flex items-center gap-3">
+            <span className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-500">
+              <Folder size={16} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-semibold truncate">{ws.name}</div>
+              <div className={`text-[12px] ${t.muted}`}>
+                {ws.clustersCount} clusters · {ws.notesCount} notes
+              </div>
+            </div>
+            <div className="w-16 shrink-0 text-right">
+              <div className="text-[13px] font-bold tabular-nums">{share(ws)}%</div>
+              <div className="mt-1"><ProgressBar theme={theme} value={share(ws)} /></div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className={`border-b ${t.divider}`}>
+              <th className={`${th} pl-5`}>Workspace</th>
+              <th className={`${th} text-right`}>Clusters</th>
+              <th className={`${th} text-right`}>Notes</th>
+              <th className={`${th} text-right`}>Total items</th>
+              <th className={`${th} pl-8 pr-5 w-[240px]`}>Share of notes</th>
+            </tr>
+          </thead>
+          <tbody className={`divide-y ${t.dark ? 'divide-white/10' : 'divide-slate-100'}`}>
+            {workspaces.map((ws) => (
+              <tr key={ws.id} className={`transition-colors ${t.hover}`}>
+                <td className="py-3 pl-5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-500">
+                      <Folder size={15} />
+                    </span>
+                    <span className="text-[13.5px] font-semibold truncate">{ws.name}</span>
+                  </div>
+                </td>
+                <td className="py-3 text-right text-[13.5px] font-semibold tabular-nums">{ws.clustersCount}</td>
+                <td className="py-3 text-right text-[13.5px] font-semibold tabular-nums">{ws.notesCount}</td>
+                <td className={`py-3 text-right text-[13.5px] tabular-nums ${t.muted}`}>{ws.clustersCount + ws.notesCount}</td>
+                <td className="py-3 pl-8 pr-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1"><ProgressBar theme={theme} value={share(ws)} /></div>
+                    <span className="w-10 text-right text-[13px] font-bold tabular-nums">{share(ws)}%</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 }
 
 export default Stats

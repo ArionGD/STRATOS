@@ -1,0 +1,21 @@
+[Unit]
+Description=Stratos Web App
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/stratos
+Environment=NODE_ENV=production
+Environment=PORT=8080
+Environment=NODE_OPTIONS=--max-old-space-size=350
+Environment=JWT_SECRET=Lj1DG9gsft1/ayxhqxCmLkRyRN+D1fd401/vLTzrFAU=
+Environment=DEMO_USERNAME=test
+Environment=DEMO_PASSWORD=pass
+Environment=SQLITE_PATH=/opt/stratos/server/.data/stratos.db
+ExecStart=/usr/bin/node /opt/stratos/server/index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,56 @@
+{
+  "backup_date": "2026-10-09T07:54:51Z",
+  "source": "GCP stratos-saas-test e2-micro VM (/opt/stratos/server/.data/stratos.db)",
+  "tables": {
+    "users": [
+      {
+        "id": 1,
+        "first_name": "Test",
+        "last_name": "User",
+        "username": "test",
+        "email": "test@stratos.com",
+        "password_hash": "$2b$10$I6Jf2ebkOo60G0tegK2frOjtDA7JhY8iWw0wvdhSHZlDM3Po8VBxO",
+        "created_at": "2026-09-24 11:02:36"
+      }
+    ],
+    "workspaces": [
+      {
+        "id": "ws_welcome",
+        "name": "Welcome Workspace",
+        "user_id": 1,
+        "created_at": "2026-09-24 11:03:12"
+      }
+    ],
+    "clusters": [
+      {
+        "id": "cluster-1790314589848",
+        "name": "New node",
+        "parent_id": "root-node",
+        "workspace_id": "ws_welcome"
+      },
+      {
+        "id": "cluster-1790314591914",
+        "name": "New node",
+        "parent_id": "root-node",
+        "workspace_id": "ws_welcome"
+      },
+      {
+        "id": "cluster-1790382165509",
+        "name": "MARKETING",
+        "parent_id": "root-node",
+        "workspace_id": "ws_welcome"
+      }
+    ],
+    "notes": [
+      {
+        "id": "note-1790355254249",
+        "title": "N1",
+        "content": "<h2></h2><p></p>",
+        "parent_id": "cluster-1790314591914",
+        "workspace_id": "ws_welcome",
+        "updated_at": "2026-09-26 04:39:49"
+      }
+    ],
+    "conversations": []
+  }
+}

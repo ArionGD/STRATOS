@@ -1,26 +1,64 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Calendar as CalendarIcon, 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Star, 
-  Bell, 
-  Cpu, 
-  Folder, 
-  FileText 
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Folder,
+  FileText,
+  Loader2,
+  CalendarDays,
+  Activity,
+  Layers
 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
-import { browserDB } from '../../services/BrowserDB'
+import { WebApi } from '../../services/WebApi'
+import { Page, Card, Grid, IconBadge, ProgressBar, EmptyState, Button, tone } from '../components/ui/Page'
+import { ROOT_COLOR, CLUSTER_COLORS } from '../components/graph/palette'
+import { noteText } from '../../utils/noteContent'
+
+// Activity is mapped onto May 2026, with May 17th as "today"
+const DATA_YEAR = 2026
+const DATA_MONTH = 4
+const TODAY = 17
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+const TYPE = {
+  workspace: { icon: Folder, color: 'amber', dot: ROOT_COLOR, label: 'Workspace created' },
+  note: { icon: FileText, color: 'sky', dot: CLUSTER_COLORS[3], label: 'Note synced' }
+}
+
+const GOALS = [
+  { title: 'Neural map v2', progress: 75, color: ROOT_COLOR },
+  { title: 'System hardening', progress: 40, color: CLUSTER_COLORS[3] },
+  { title: 'Data migration', progress: 95, color: CLUSTER_COLORS[0] }
+]
+
+// Compact stat tile: same tokens as StatTile, but fits three across on a phone
+function MiniStat({ theme, icon, color, label, value, hint }) {
+  const t = tone(theme)
+  return (
+    <div className={`rounded-2xl border p-3 md:px-5 md:py-4 min-w-0 ${t.card}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-[12px] font-medium truncate ${t.muted}`}>{label}</span>
+        <span className="max-md:hidden"><IconBadge theme={theme} icon={icon} color={color} size="sm" /></span>
+      </div>
+      <div className="mt-1 text-[22px] md:text-[26px] font-bold tracking-tight leading-none tabular-nums">{value}</div>
+      {hint && <div className={`mt-1 md:mt-1.5 text-[12px] truncate ${t.muted}`}>{hint}</div>}
+    </div>
+  )
+}
 
 const Plan = ({ theme }) => {
-  const isDark = theme === 'dark';
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const t = tone(theme)
 
   const [loading, setLoading] = useState(true);
   const [activityMap, setActivityMap] = useState({});
   const [events, setEvents] = useState([]);
+  const [view, setView] = useState({ year: DATA_YEAR, month: DATA_MONTH });
+  const [selected, setSelected] = useState({ year: DATA_YEAR, month: DATA_MONTH, day: TODAY });
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const fetchTimelineActivity = async () => {
@@ -37,7 +75,7 @@ const Plan = ({ theme }) => {
             invoke('list_workspaces', { user_id: 1 })
           );
           workspaces = wsList || [];
-          
+
           for (const ws of workspaces) {
             const [clusters, notesList] = await invoke('get_workspace_data', { workspaceId: ws.id }).catch(() =>
               invoke('get_workspace_data', { workspace_id: ws.id })
@@ -45,9 +83,10 @@ const Plan = ({ theme }) => {
             allNotes = [...allNotes, ...(notesList || [])];
           }
         } else {
-          // Dexie IndexedDB
-          workspaces = await browserDB.workspaces.toArray();
-          allNotes = await browserDB.notes.toArray();
+          // Web Mode: Stratos API
+          const overview = await WebApi.get('/overview');
+          workspaces = overview.workspaces;
+          allNotes = overview.notes;
         }
 
         // Map workspaces and notes to days in May 2026
@@ -72,7 +111,7 @@ const Plan = ({ theme }) => {
             type: 'note',
             title: `Note Synchronized`,
             name: note.title,
-            detail: note.content ? `${note.content.substring(0, 35)}...` : 'Empty content sync'
+            detail: note.content ? `${noteText(note.content).substring(0, 35)}...` : 'Empty content sync'
           });
         });
 
@@ -86,7 +125,7 @@ const Plan = ({ theme }) => {
         map[day].forEach(act => {
           upcomingEvents.push({
             day: parseInt(day),
-            title: `${act.type === 'workspace' ? '📁' : '📝'} ${act.name}`,
+            title: act.name,
             type: act.type
           });
         });
@@ -101,205 +140,234 @@ const Plan = ({ theme }) => {
     fetchTimelineActivity();
   }, []);
 
+  const isDataMonth = view.year === DATA_YEAR && view.month === DATA_MONTH
+  const activityFor = (y, m, d) => (y === DATA_YEAR && m === DATA_MONTH ? activityMap[d] || [] : [])
+
+  const shiftMonth = (delta) => {
+    const d = new Date(view.year, view.month + delta, 1)
+    const next = { year: d.getFullYear(), month: d.getMonth() }
+    setView(next)
+    const isData = next.year === DATA_YEAR && next.month === DATA_MONTH
+    setSelected({ ...next, day: isData ? TODAY : 1 })
+    setShowAll(false)
+  }
+  const selectDay = (day) => { setSelected({ ...view, day }); setShowAll(false) }
+
+  // Month grid (Monday first)
+  const offset = (new Date(view.year, view.month, 1).getDay() + 6) % 7
+  const daysInMonth = new Date(view.year, view.month + 1, 0).getDate()
+  const cells = Math.ceil((offset + daysInMonth) / 7) * 7
+
+  const monthActs = isDataMonth ? Object.values(activityMap).flat() : []
+  const activeDays = isDataMonth ? Object.keys(activityMap).filter(d => activityMap[d].length).length : 0
+
+  const selectedActs = activityFor(selected.year, selected.month, selected.day)
+  const selectedDate = new Date(selected.year, selected.month, selected.day)
+  const selectedIsToday = selected.year === DATA_YEAR && selected.month === DATA_MONTH && selected.day === TODAY
+  const visibleActs = showAll ? selectedActs : selectedActs.slice(0, 5)
+
+  const monthSwitcher = (
+    <div className="flex items-center gap-1 max-md:w-full max-md:justify-between">
+      <Button theme={theme} icon={ChevronLeft} aria-label="Previous month" onClick={() => shiftMonth(-1)} className="w-10 h-10 md:w-9 md:h-9 !px-0" />
+      <span className="min-w-[112px] text-center text-[14px] font-semibold tabular-nums">{MONTHS[view.month]} {view.year}</span>
+      <Button theme={theme} icon={ChevronRight} aria-label="Next month" onClick={() => shiftMonth(1)} className="w-10 h-10 md:w-9 md:h-9 !px-0" />
+      {!isDataMonth && (
+        <Button
+          theme={theme}
+          onClick={() => { setView({ year: DATA_YEAR, month: DATA_MONTH }); setSelected({ year: DATA_YEAR, month: DATA_MONTH, day: TODAY }) }}
+          className="ml-1 h-10 md:h-9"
+        >
+          Today
+        </Button>
+      )}
+    </div>
+  )
+
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-4">
-        <Cpu size={32} className="text-amber-500 animate-spin" />
-        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">CALIBRATING ROADMAP INDEX...</div>
-      </div>
+      <Page theme={theme} icon={CalendarIcon} title="Plan" subtitle="Your activity by day, and the goals you're working towards">
+        <div className={`py-24 flex flex-col items-center gap-3 ${t.muted}`}>
+          <Loader2 size={24} className="animate-spin text-amber-500" />
+          <span className="text-[13px]">Loading activity…</span>
+        </div>
+      </Page>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className={`flex-1 flex flex-col h-full overflow-hidden ${
-        isDark ? 'text-white' : 'text-slate-800'
-      }`}
+    <Page
+      theme={theme}
+      icon={CalendarIcon}
+      title="Plan"
+      subtitle="Your activity by day, and the goals you're working towards"
+      actions={monthSwitcher}
     >
-      <header className={`h-24 border-b flex items-center justify-between px-10 shrink-0 ${
-        isDark ? 'border-white/5' : 'border-slate-200 bg-white'
-      }`}>
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/10">
-            <CalendarIcon size={24} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter">Architectural <span className="text-amber-500">Timeline</span></h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Synchronize your cognitive roadmap</p>
-          </div>
-        </div>
+      <Grid cols="lg:grid-cols-3" className="items-start">
+        <div className="lg:col-span-2 space-y-3 md:space-y-4 min-w-0">
+      <div className="grid grid-cols-3 gap-2 md:gap-4">
+        <MiniStat theme={theme} icon={CalendarDays} color="amber" label="Active days" value={activeDays} hint="this month" />
+        <MiniStat theme={theme} icon={Layers} color="amber" label="Workspaces" value={monthActs.filter(a => a.type === 'workspace').length} hint="created" />
+        <MiniStat theme={theme} icon={FileText} color="sky" label="Notes" value={monthActs.filter(a => a.type === 'note').length} hint="synced" />
+      </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <button className={`p-2 rounded-lg transition-all ${isDark ? 'hover:bg-white/5 text-slate-500' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronLeft size={20} /></button>
-            <span className="text-sm font-black uppercase tracking-widest">May 2026</span>
-            <button className={`p-2 rounded-lg transition-all ${isDark ? 'hover:bg-white/5 text-slate-500' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronRight size={20} /></button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 p-10 overflow-hidden">
-        {/* Calendar Grid */}
-        <div className={`lg:col-span-3 rounded-[3rem] border p-8 overflow-hidden flex flex-col justify-between ${
-          isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className="grid grid-cols-7 mb-4">
-            {days.map(d => (
-              <div key={d} className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">{d}</div>
+        {/* Calendar */}
+        <Card
+          theme={theme}
+          title="Calendar"
+          subtitle="Select a day to see its activity"
+          action={
+            <div className={`max-sm:hidden flex items-center gap-3 text-[12px] pt-0.5 ${t.muted}`}>
+              {Object.entries(TYPE).map(([k, v]) => (
+                <span key={k} className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: v.dot }} />
+                  {k === 'workspace' ? 'Workspace' : 'Note'}
+                </span>
+              ))}
+            </div>
+          }
+        >
+          <div className="grid grid-cols-7 gap-1 md:gap-1.5 mb-1.5">
+            {WEEKDAYS.map(d => (
+              <div key={d} className={`text-center lg:text-left lg:pl-2.5 text-[11.5px] font-medium ${t.faint}`}>
+                <span className="sm:hidden">{d[0]}</span>
+                <span className="max-sm:hidden">{d}</span>
+              </div>
             ))}
           </div>
-          
-          <div className="flex-1 grid grid-cols-7 grid-rows-5 gap-2.5">
-            {Array.from({ length: 35 }).map((_, i) => {
-              // Padding/offset for Mon first layout starting in May 2026 (May 1st is Friday)
-              // Monday is offset index -4
-              const day = i - 3;
-              const isMonthDay = day >= 1 && day <= 31;
-              
-              if (!isMonthDay) {
-                return (
-                  <div key={i} className={`p-4 rounded-2xl opacity-10 border ${
-                    isDark ? 'border-white/5 bg-transparent' : 'border-slate-100 bg-slate-50'
-                  }`} />
-                );
-              }
+          <div className="grid grid-cols-7 gap-1 md:gap-1.5">
+            {Array.from({ length: cells }).map((_, i) => {
+              const day = i - offset + 1
+              if (day < 1 || day > daysInMonth) return <div key={i} className="h-11 lg:h-[68px]" />
 
-              const dayActivities = activityMap[day] || [];
-              const hasWork = dayActivities.length > 0;
-              const isToday = day === 17; // May 17th 2026 is today!
+              const acts = activityFor(view.year, view.month, day)
+              const isToday = isDataMonth && day === TODAY
+              const isSelected = selected.year === view.year && selected.month === view.month && selected.day === day
+              const types = [...new Set(acts.map(a => a.type))]
 
               return (
-                <div 
-                  key={i} 
-                  className={`p-4 rounded-2xl border transition-all relative group cursor-pointer flex flex-col justify-between min-h-[90px] ${
-                    isToday 
-                      ? 'border-amber-500 bg-amber-500/5 shadow-inner' 
-                      : hasWork
-                        ? (isDark ? 'border-white/10 bg-white/2 hover:border-blue-500/30' : 'border-slate-200 bg-white hover:border-blue-500/20 hover:shadow-sm')
-                        : (isDark ? 'border-white/5 bg-transparent opacity-60 hover:opacity-100' : 'border-slate-100 bg-slate-50/50 opacity-60 hover:opacity-100')
-                  }`}
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => selectDay(day)}
+                  aria-pressed={isSelected}
+                  aria-label={`${MONTHS[view.month]} ${day}${acts.length ? `, ${acts.length} items` : ''}`}
+                  className={`relative h-11 lg:h-[68px] min-w-0 rounded-xl flex flex-col items-center lg:items-start justify-center lg:justify-between gap-1 lg:p-2.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${
+                    isSelected
+                      ? (t.dark ? 'bg-amber-400/15' : 'bg-amber-50')
+                      : acts.length ? (t.dark ? 'bg-white/[0.03] hover:bg-white/[0.07]' : 'bg-slate-50 hover:bg-slate-100') : t.hover
+                  } ${isToday ? 'ring-2 ring-inset ring-amber-500' : ''}`}
                 >
-                  <div className="flex justify-between items-center w-full">
-                    <span className={`text-xs font-black ${isToday ? 'text-amber-500' : 'text-slate-500'}`}>{day}</span>
-                    {isToday && (
-                      <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
-                        TODAY
-                      </span>
+                  <span className={`text-[13.5px] leading-none tabular-nums ${
+                    isSelected || isToday ? `font-bold ${t.dark ? 'text-amber-300' : 'text-amber-600'}` : acts.length ? `font-semibold ${t.text}` : t.muted
+                  }`}>
+                    {day}
+                  </span>
+                  <span className="flex items-center gap-1 h-1.5 lg:h-auto">
+                    {types.map(type => (
+                      <span key={type} className="w-1.5 h-1.5 rounded-full" style={{ background: TYPE[type].dot }} />
+                    ))}
+                    {acts.length > 0 && (
+                      <span className={`hidden lg:inline text-[11px] leading-none ml-0.5 ${t.muted}`}>{acts.length}</span>
                     )}
-                  </div>
-
-                  {/* Marker Dots for Work done on Date */}
-                  {hasWork && (
-                    <div className="flex items-center gap-1.5 mt-auto pt-2">
-                      <div className="flex gap-1">
-                        {dayActivities.slice(0, 3).map((act, idx) => (
-                          <div 
-                            key={idx} 
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              act.type === 'workspace' 
-                                ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]' 
-                                : 'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]'
-                            }`} 
-                          />
-                        ))}
-                      </div>
-                      <span className="text-[8px] font-black text-slate-500 leading-none">
-                        {dayActivities.length} {dayActivities.length === 1 ? 'Action' : 'Actions'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Hover Popup Panel showing the work details */}
-                  {hasWork && (
-                    <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-4 rounded-2xl border flex flex-col gap-2 transition-all duration-300 opacity-0 pointer-events-none group-hover:opacity-100 shadow-2xl z-[999] w-64 ${
-                      isDark 
-                        ? 'bg-slate-950/95 backdrop-blur-md border-white/10 text-white' 
-                        : 'bg-white border-slate-200 text-slate-800 shadow-slate-900/10'
-                    }`}>
-                      <div className="font-black uppercase tracking-wider text-[9px] border-b border-slate-500/10 pb-1.5 text-blue-400">
-                        Activity Audit • May {day}
-                      </div>
-                      <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
-                        {dayActivities.map((act, idx) => (
-                          <div key={idx} className="space-y-0.5 text-left">
-                            <div className="text-[10px] font-black uppercase flex items-center gap-1.5 text-slate-200">
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${act.type === 'workspace' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-                              {act.title}
-                            </div>
-                            <div className="text-[10px] font-bold text-white pl-3 break-words">{act.name}</div>
-                            <p className="text-[9px] text-slate-500 font-medium pl-3 truncate">{act.detail}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
+                  </span>
+                </button>
+              )
             })}
           </div>
+          <div className={`sm:hidden mt-3 flex items-center justify-center gap-4 text-[12px] ${t.muted}`}>
+            {Object.entries(TYPE).map(([k, v]) => (
+              <span key={k} className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ background: v.dot }} />
+                {k === 'workspace' ? 'Workspace' : 'Note'}
+              </span>
+            ))}
+          </div>
+        </Card>
         </div>
 
-        {/* Sidebar Schedule */}
-        <div className="space-y-6 overflow-y-auto no-scrollbar">
-          <div className={`p-8 rounded-[2.5rem] border space-y-6 ${
-            isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
-          }`}>
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-              <Star size={14} className="text-amber-500 animate-pulse" /> Active Goals
-            </h3>
+        {/* Right column: selected day, goals, recent activity */}
+        <div className="space-y-3 md:space-y-4 min-w-0">
+          <Card
+            theme={theme}
+            padded={false}
+            title={selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            subtitle={`${selectedIsToday ? 'Today · ' : ''}${selectedActs.length ? `${selectedActs.length} ${selectedActs.length === 1 ? 'item' : 'items'}` : 'No activity'}`}
+          >
+            {selectedActs.length === 0 ? (
+              <div className={`px-4 md:px-5 py-6 text-center text-[13px] ${t.muted}`}>Nothing was created or synced on this day.</div>
+            ) : (
+              <>
+                <ul className={`divide-y ${t.dark ? 'divide-white/10' : 'divide-slate-100'}`}>
+                  {visibleActs.map((act, idx) => {
+                    const meta = TYPE[act.type]
+                    return (
+                      <li key={idx} className="flex items-center gap-3 px-4 md:px-5 py-2.5 min-w-0">
+                        <IconBadge theme={theme} icon={meta.icon} color={meta.color} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[13.5px] font-medium truncate">{act.name}</div>
+                          <div className={`text-[12px] truncate ${t.muted}`}>{meta.label} · {act.detail}</div>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+                {selectedActs.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAll(s => !s)}
+                    className={`w-full h-10 border-t text-[13px] font-semibold ${t.divider} ${t.dark ? 'text-amber-300' : 'text-amber-600'} ${t.hover} rounded-b-2xl`}
+                  >
+                    {showAll ? 'Show less' : `Show all ${selectedActs.length}`}
+                  </button>
+                )}
+              </>
+            )}
+          </Card>
+
+          <Card theme={theme} title="Goals">
             <div className="space-y-4">
-              {[
-                { title: 'Neural Map V2', progress: 75 },
-                { title: 'System Hardening', progress: 40 },
-                { title: 'Data Migration', progress: 95 },
-              ].map((g, idx) => (
-                <div key={idx} className="space-y-2">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                    <span>{g.title}</span>
-                    <span className="text-amber-500">{g.progress}%</span>
+              {GOALS.map((g) => (
+                <div key={g.title}>
+                  <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                    <span className={`text-[13px] ${t.body}`}>{g.title}</span>
+                    <span className="text-[13px] font-bold tabular-nums">{g.progress}%</span>
                   </div>
-                  <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${g.progress}%` }} className="h-full bg-amber-500"></motion.div>
-                  </div>
+                  <ProgressBar theme={theme} value={g.progress} color={g.color} />
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
-          <div className={`p-8 rounded-[2.5rem] border space-y-6 ${
-            isDark ? 'border-white/5 bg-white/2' : 'border-slate-200 bg-white shadow-sm'
-          }`}>
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-              <Bell size={14} className="text-amber-500 animate-bounce" /> Synchronization
-            </h3>
-            <div className="space-y-4">
-              {events.length === 0 ? (
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center py-4">No recent activity logged</div>
-              ) : (
-                events.map((e, idx) => (
-                  <div key={idx} className={`flex gap-4 p-4 rounded-xl border transition-colors ${
-                    isDark ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                  }`}>
-                    <div className="text-center shrink-0">
-                      <div className="text-xs font-black text-amber-500">{e.day}</div>
-                      <div className="text-[8px] font-black text-slate-500 uppercase">May</div>
-                    </div>
-                    <div className="truncate flex-1">
-                      <div className="text-xs font-bold truncate">{e.title}</div>
-                      <div className="text-[9px] font-black uppercase text-slate-500 mt-0.5">
-                        {e.type === 'workspace' ? 'Environment Build' : 'Knowledge Node'}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <Card theme={theme} title="Recent activity" padded={false}>
+            {events.length === 0 ? (
+              <EmptyState theme={theme} icon={Activity} title="No recent activity" text="Create a workspace or note and it will show up here." />
+            ) : (
+              <ul className={`divide-y ${t.dark ? 'divide-white/10' : 'divide-slate-100'}`}>
+                {events.map((e, idx) => {
+                  const meta = TYPE[e.type]
+                  return (
+                    <li key={idx}>
+                      <button
+                        type="button"
+                        onClick={() => { setView({ year: DATA_YEAR, month: DATA_MONTH }); setSelected({ year: DATA_YEAR, month: DATA_MONTH, day: e.day }); setShowAll(false) }}
+                        className={`w-full min-h-[52px] flex items-center gap-3 px-4 md:px-5 py-2.5 text-left transition-colors ${t.hover} ${idx === events.length - 1 ? 'rounded-b-2xl' : ''}`}
+                      >
+                        <IconBadge theme={theme} icon={meta.icon} color={meta.color} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[13.5px] font-medium truncate">{e.title}</div>
+                          <div className={`text-[12px] ${t.muted}`}>{meta.label}</div>
+                        </div>
+                        <span className={`shrink-0 text-[12px] tabular-nums ${t.muted}`}>May {e.day}</span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </Card>
         </div>
-      </div>
-    </motion.div>
+      </Grid>
+    </Page>
   )
 }
 

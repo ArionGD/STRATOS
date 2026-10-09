@@ -16,12 +16,22 @@ import Recommend from './pages/Recommend'
 import Guide from './pages/Guide'
 import InfoPage from './pages/Info'
 import MetisChat from '../Metis/MetisChat'
+import { AI_ENABLED } from '../features'
+import useIsMobile from '../hooks/useIsMobile'
+import { setBackHandler, postToNative } from '../services/NativeBridge'
+import { MobileHeader, MobileTabBar, MobileMoreSheet } from './components/mobile/MobileNav'
+import MobileHome from './components/mobile/MobileHome'
+import { HeaderSearch, MobileSearchSheet } from './components/search/GlobalSearch'
+import { Toast } from './components/editor/ItemActions'
 import Stats from './modules/Stats'
 import Notes from './modules/Notes'
 import Plan from './modules/Plan'
 import Vault from './modules/Vault'
 import System from './modules/System'
 import { WorkspaceService } from '../services/WorkspaceService'
+import { isTauri } from '../services/WebApi'
+import { takeWorkspaceToOpen } from '../services/ShareService'
+import ShareDialog from './components/share/ShareDialog'
 import { 
   Brain,
   LayoutGrid, 
@@ -39,15 +49,23 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  LogOut
+  LogOut,
+  PanelRightOpen,
+  PanelRightClose,
+  Users
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import useUserStore from '../store/useUserStore'
 function Dashboard() {
   const navigate = useNavigate()
   const { user, logout } = useUserStore()
-  const [activeView, setActiveView] = useState('graph')
-  const [theme, setTheme] = useState('light')
+  // Phones open on the compact Home screen; desktop keeps the graph
+  const [activeView, setActiveView] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'home' : 'graph'
+  )
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('stratos-theme') === 'dark' ? 'dark' : 'light' } catch { return 'light' }
+  })
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isEditorExpanded, setIsEditorExpanded] = useState(false)
@@ -60,8 +78,137 @@ function Dashboard() {
   const [activeWorkspace, setActiveWorkspace] = useState(null)
   const [activeNode, setActiveNode] = useState(null)
   const [dashboardNodes, setDashboardNodes] = useState([])
+  const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  // Bumped when a panel creates a note/cluster so the graph reloads
+  const [graphReloadKey, setGraphReloadKey] = useState(0)
+  const [isShareOpen, setIsShareOpen] = useState(false)
+  const reloadGraph = () => setGraphReloadKey(k => k + 1)
+  const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
+  const notify = (text) => {
+    clearTimeout(toastTimer.current)
+    setToast({ id: Date.now(), text })
+    toastTimer.current = setTimeout(() => setToast(null), 2600)
+  }
+  const isMobile = useIsMobile()
   const sidebarRef = useRef(null)
   const profileRef = useRef(null)
+
+  // Phone navigation: switch view and close any open panel/sheet
+  const goToView = (view) => {
+    setActiveView(view)
+    setIsEditorOpen(false)
+    setIsEditorExpanded(false)
+    setIsAiOpen(false)
+    setIsMoreOpen(false)
+  }
+
+  // Search result: switch to its workspace and open it in the editor
+  const openSearchResult = (r) => {
+    const ws = workspaces.find(w => w.id === r.workspace.id) || r.workspace
+    setActiveWorkspace(ws)
+    setActiveNode(r.kind === 'workspace'
+      ? { id: 'root-node', type: 'workspace', data: { label: ws.name } }
+      : { id: r.id, type: r.kind, parentId: r.parentId, data: { label: r.title, type: r.kind } })
+    setActiveView('graph')
+    setIsAiOpen(false)
+    setIsMoreOpen(false)
+    setIsSearchOpen(false)
+    setIsEditorOpen(true)
+  }
+
+  // ---------------------------------------------------------------- rename / move / delete
+
+  const closePanel = () => {
+    setIsEditorOpen(false)
+    setIsEditorExpanded(false)
+    setActiveNode(null)
+  }
+
+  const onNoteDeleted = ({ title }) => {
+    closePanel()
+    reloadGraph()
+    notify(`Deleted “${title}”`)
+  }
+
+  const onNoteMoved = ({ id, title, parentId, workspace, destination }) => {
+    reloadGraph()
+    // Follow the note to its new place so the editor keeps saving to the right parent
+    openSearchResult({ kind: 'note', id, title, parentId, workspace })
+    notify(`Moved to ${destination || workspace.name}`)
+  }
+
+  const onWorkspaceRenamed = (ws) => {
+    setWorkspaces(list => list.map(w => (w.id === ws.id ? { ...w, name: ws.name } : w)))
+    setActiveWorkspace(prev => (prev?.id === ws.id ? { ...prev, name: ws.name } : prev))
+    reloadGraph()
+    notify(`Renamed to “${ws.name}”`)
+  }
+
+  const onWorkspaceDeleted = (ws) => {
+    const remaining = workspaces.filter(w => w.id !== ws.id)
+    setWorkspaces(remaining)
+    setActiveWorkspace(remaining[0] || null)
+    closePanel()
+    notify(`Deleted “${ws.name}”`)
+  }
+
+  // ---------------------------------------------------------------- sharing (web only)
+
+  const readOnly = activeWorkspace?.role === 'viewer'
+  const openShare = isTauri ? undefined : () => setIsShareOpen(true)
+
+  // Member counts and roles can change in the share dialog
+  const refreshWorkspaces = async () => {
+    const data = await WorkspaceService.initialize()
+    if (!data?.length) return
+    setWorkspaces(data)
+    setActiveWorkspace(prev => data.find(w => w.id === prev?.id) || data[0])
+  }
+
+  const onLeftWorkspace = (ws) => {
+    const remaining = workspaces.filter(w => w.id !== ws.id)
+    setWorkspaces(remaining)
+    setActiveWorkspace(remaining[0] || null)
+    closePanel()
+    reloadGraph()
+    notify(`You left “${ws.name}”`)
+  }
+
+  const onClusterDeleted = ({ name }) => {
+    closePanel()
+    reloadGraph()
+    notify(`Deleted “${name}”`)
+  }
+
+  // Desktop right-panel handle: opens the editor beside the graph, closes any open panel
+  const toggleRightPanel = () => {
+    if (isEditorOpen || isAiOpen) {
+      setIsEditorOpen(false)
+      setIsEditorExpanded(false)
+      setIsAiOpen(false)
+      return
+    }
+    if (!activeNode) {
+      setActiveNode({ id: 'root-node', type: 'workspace', data: { label: activeWorkspace?.name || 'Workspace' } })
+    }
+    setIsEditorOpen(true)
+  }
+
+  // Home screen shortcuts
+  const openWorkspace = (ws) => {
+    setActiveWorkspace(ws)
+    goToView('graph')
+  }
+
+  const openNoteFromHome = (note, ws) => {
+    if (ws) setActiveWorkspace(ws)
+    setActiveNode({ id: note.id, type: 'note', parentId: note.parent_id, data: { label: note.title, type: 'note' } })
+    setActiveView('graph')
+    setIsAiOpen(false)
+    setIsEditorOpen(true)
+  }
 
   const toggleWorkspace = (id) => {
     setExpandedWorkspaces(prev => 
@@ -83,11 +230,35 @@ function Dashboard() {
       setWorkspaces(data)
       // SAFETY RAIL: Only set if data exists and no workspace is active
       if (data && data.length > 0 && !activeWorkspace) {
-        setActiveWorkspace(data[0])
+        // Just joined a workspace from an invite: open that one
+        const joinedId = takeWorkspaceToOpen()
+        setActiveWorkspace(data.find(w => w.id === joinedId) || data[0])
       }
     }
     initWorkspaces()
   }, [])
+
+  // Android back button (Expo shell): close the top-most layer first
+  const backStateRef = useRef({})
+  backStateRef.current = { isSearchOpen, isMoreOpen, isCreateModalOpen, isSidebarOpen, isEditorOpen, isAiOpen, activeView, isMobile }
+  useEffect(() => setBackHandler(() => {
+    const st = backStateRef.current
+    if (st.isSearchOpen) { setIsSearchOpen(false); return true }
+    if (st.isMoreOpen) { setIsMoreOpen(false); return true }
+    if (st.isCreateModalOpen) { setIsCreateModalOpen(false); return true }
+    if (st.isSidebarOpen) { setIsSidebarOpen(false); return true }
+    if (st.isEditorOpen) { setIsEditorOpen(false); setIsEditorExpanded(false); return true }
+    if (st.isAiOpen) { setIsAiOpen(false); return true }
+    const rootView = st.isMobile ? 'home' : 'graph'
+    if (st.activeView !== rootView) { setActiveView(rootView); return true }
+    return false
+  }), [])
+
+  // Remember the theme, and let the Android shell match its status bar to it
+  useEffect(() => {
+    try { localStorage.setItem('stratos-theme', theme) } catch { /* private mode */ }
+    postToNative({ type: 'theme', value: theme })
+  }, [theme])
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -115,10 +286,10 @@ function Dashboard() {
   }, [isSidebarOpen])
 
   return (
-    <div className={`flex h-screen w-screen overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#0F172A] text-white' : 'bg-[#F8FAFC] text-[#0F172A]'}`}>
+    <div className={`flex h-[100dvh] w-screen overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#0F172A] text-white' : 'bg-[#F8FAFC] text-[#0F172A]'}`}>
       
       {/* 1. SLIM ICON RAIL (Deep Blue Glass) */}
-      <aside className={`w-[70px] h-full border-r transition-all duration-200 flex flex-col items-center py-6 shrink-0 z-[60] ${theme === 'dark' ? 'bg-[#0A0F1C]/90 backdrop-blur-2xl border-white/5' : 'bg-white border-[#E2E8F0]'}`}>
+      <aside className={`w-[70px] h-full border-r transition-all duration-200 hidden md:flex flex-col items-center py-6 shrink-0 z-[60] ${theme === 'dark' ? 'bg-[#0A0F1C]/90 backdrop-blur-2xl border-white/5' : 'bg-white border-[#E2E8F0]'}`}>
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="logo-trigger w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center text-white font-black text-2xl mb-8 shadow-lg shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
@@ -194,17 +365,17 @@ function Dashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[40]"
+              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[99] md:z-[40]"
               onClick={() => setIsSidebarOpen(false)}
             />
             
             <motion.aside 
               ref={sidebarRef}
               initial={{ x: -300, opacity: 0 }}
-              animate={{ x: 70, opacity: 1 }}
+              animate={{ x: isMobile ? 0 : 70, opacity: 1 }}
               exit={{ x: -300, opacity: 0 }}
               transition={{ type: 'spring', damping: 35, stiffness: 500, restDelta: 0.001 }}
-              className={`fixed top-0 bottom-0 w-72 border-r flex flex-col shrink-0 z-[50] shadow-2xl ${
+              className={`fixed top-0 bottom-0 w-[85vw] max-w-72 md:w-72 border-r flex flex-col shrink-0 z-[100] md:z-[50] shadow-2xl ${
                 theme === 'dark' ? 'bg-[#0F172A]/40 backdrop-blur-3xl border-white/5' : 'bg-white border-[#E2E8F0]'
               }`}
             >
@@ -243,7 +414,7 @@ function Dashboard() {
                   </button>
                 </div>
 
-                <nav className="flex-1 px-3 space-y-1">
+                <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
                   <div className="space-y-1.5">
                     {workspaces.map(ws => (
                       <div key={ws.id} className="flex flex-col">
@@ -253,13 +424,17 @@ function Dashboard() {
                               ? (theme === 'dark' ? 'bg-blue-600/10 text-white border border-blue-500/20' : 'bg-blue-50 text-blue-600 border border-blue-100') 
                               : (theme === 'dark' ? 'text-slate-400 hover:bg-white/5 hover:text-white' : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]')
                           }`}
-                          onClick={() => setActiveWorkspace(ws)}
+                          onClick={() => {
+                            setActiveWorkspace(ws)
+                            if (isMobile) { goToView('graph'); setIsSidebarOpen(false) }
+                          }}
                         >
                           <div className="flex items-center gap-3">
                             <div className={`w-2.5 h-2.5 rounded-full border-2 transition-all group-hover:scale-110 ${
                               activeWorkspace?.id === ws.id ? 'border-blue-500 bg-blue-500' : 'border-slate-600'
                             }`} />
                             <span className="text-xs font-bold tracking-wide">{ws.name}</span>
+                            {Number(ws.member_count) > 1 && <Users size={12} className="opacity-60" aria-label="Shared" />}
                           </div>
                           <button 
                             onClick={(e) => {
@@ -324,13 +499,25 @@ function Dashboard() {
       <main className="flex-1 flex flex-col min-w-0 relative">
         {theme === 'dark' && (
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[140px]"></div>
-            <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-900/30 rounded-full blur-[120px]"></div>
-            <div className="absolute top-[20%] left-[30%] w-[300px] h-[300px] bg-indigo-600/10 rounded-full blur-[100px]"></div>
+            <div className="absolute top-[-20%] right-0 md:right-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-blue-600/20 rounded-full blur-[140px]"></div>
+            <div className="absolute bottom-[-20%] left-0 md:left-[-10%] w-[260px] h-[260px] md:w-[500px] md:h-[500px] bg-blue-900/30 rounded-full blur-[120px]"></div>
+            <div className="absolute top-[20%] left-[30%] w-[160px] h-[160px] md:w-[300px] md:h-[300px] bg-indigo-600/10 rounded-full blur-[100px]"></div>
           </div>
         )}
 
-        <header className={`h-20 border-b flex items-center justify-between px-8 shrink-0 z-40 transition-all duration-500 ${theme === 'dark' ? 'bg-[#0F172A]/70 backdrop-blur-2xl border-white/10' : 'bg-white border-[#E2E8F0]'}`}>
+        <MobileHeader
+          theme={theme}
+          user={user}
+          activeView={activeView}
+          activeWorkspace={activeWorkspace}
+          isEditorOpen={isEditorOpen}
+          onOpenWorkspaces={() => setIsSidebarOpen(true)}
+          onToggleEditor={() => { setIsEditorOpen(!isEditorOpen); setIsAiOpen(false); }}
+          onOpenMore={() => setIsMoreOpen(true)}
+          onOpenSearch={() => setIsSearchOpen(true)}
+        />
+
+        <header className={`h-20 border-b hidden md:flex items-center justify-between px-8 shrink-0 z-40 transition-all duration-500 ${theme === 'dark' ? 'bg-[#0F172A]/70 backdrop-blur-2xl border-white/10' : 'bg-white border-[#E2E8F0]'}`}>
           <div className={`flex rounded-full p-1.5 gap-1 ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-[#F8FAFC]'}`}>
             <button 
               onClick={() => { setIsEditorOpen(false); setIsAiOpen(false); setActiveView('graph'); }}
@@ -344,27 +531,17 @@ function Dashboard() {
               className={`px-5 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${isEditorOpen ? (theme === 'dark' ? 'bg-white text-[#0F172A] shadow-xl' : 'bg-[#0F172A] text-white shadow-md') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
               Editor
             </button>
+            {AI_ENABLED && (
             <button 
               onClick={() => { setIsAiOpen(!isAiOpen); setIsEditorOpen(false); setActiveView('graph'); }}
               className={`px-5 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${isAiOpen ? (theme === 'dark' ? 'bg-white text-[#0F172A] shadow-xl' : 'bg-[#0F172A] text-white shadow-md') : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-[#64748B] hover:bg-[#E2E8F0]')}`}>
               AI
             </button>
+            )}
           </div>
 
           <div className="absolute left-1/2 -translate-x-1/2 z-50">
-            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
-              theme === 'dark' ? 'bg-white/5 border-white/5 focus-within:border-amber-500/40' : 'bg-white border-slate-300 focus-within:border-amber-500/40 focus-within:shadow-sm'
-            }`}>
-              <input 
-                type="text" 
-                placeholder="Search architecture..." 
-                className={`bg-transparent border-none outline-none text-[12px] w-64 font-bold placeholder:text-slate-500 ${theme === 'dark' ? 'text-white' : 'text-[#0F172A]'}`}
-              />
-              <div className="flex items-center gap-1 border-l pl-2 border-slate-500/20">
-                <button className="p-1 text-slate-500 hover:text-amber-500 transition-colors"><Mic size={14} /></button>
-                <button className="p-1 text-slate-500 hover:text-amber-500 transition-colors"><Search size={14} /></button>
-              </div>
-            </div>
+            <HeaderSearch theme={theme} onSelect={openSearchResult} />
           </div>
 
           <div className="flex items-center gap-6">
@@ -527,15 +704,15 @@ function Dashboard() {
           </div>
         </header>
 
-        <div className="flex-1 flex overflow-hidden relative z-10">
+        <div className="flex-1 flex overflow-hidden relative z-10 pb-[calc(64px+var(--safe-bottom))] md:pb-0">
           {activeView === 'graph' ? (
             <>
               <motion.div 
                 animate={{ 
-                  flex: isEditorExpanded ? 0 : ((isEditorOpen || isAiOpen) ? 1 : 2),
-                  opacity: isEditorExpanded ? 0 : 1,
-                  width: isEditorExpanded ? 0 : 'auto',
-                  pointerEvents: isEditorExpanded ? 'none' : 'auto'
+                  flex: (isEditorExpanded || (isMobile && (isEditorOpen || isAiOpen))) ? 0 : ((isEditorOpen || isAiOpen) ? 1 : 2),
+                  opacity: (isEditorExpanded || (isMobile && (isEditorOpen || isAiOpen))) ? 0 : 1,
+                  width: (isEditorExpanded || (isMobile && (isEditorOpen || isAiOpen))) ? 0 : 'auto',
+                  pointerEvents: (isEditorExpanded || (isMobile && (isEditorOpen || isAiOpen))) ? 'none' : 'auto'
                 }}
                 transition={{ type: 'spring', damping: 35, stiffness: 300 }}
                 className="h-full overflow-hidden relative"
@@ -550,9 +727,27 @@ function Dashboard() {
                   setActiveNode={setActiveNode}
                   setIsEditorOpen={setIsEditorOpen}
                   setDashboardNodes={setDashboardNodes}
+                  activeNode={activeNode}
+                  reloadKey={graphReloadKey}
+                  onShare={openShare}
                 />
 
+                {/* Right panel toggle (desktop) */}
+                <button
+                  onClick={toggleRightPanel}
+                  aria-label={isEditorOpen || isAiOpen ? 'Close side panel' : 'Open editor panel'}
+                  title={isEditorOpen || isAiOpen ? 'Close side panel' : 'Open editor panel'}
+                  className={`hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-[998] h-16 w-7 items-center justify-center rounded-l-xl border border-r-0 shadow-lg transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#0F172A]/90 backdrop-blur-xl border-white/10 text-slate-400 hover:text-white'
+                      : 'bg-white border-slate-200 text-slate-500 hover:text-[#0F172A]'
+                  }`}
+                >
+                  {isEditorOpen || isAiOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+                </button>
+
                 {/* METIS AI Floating Bubble Trigger */}
+                {AI_ENABLED && (
                 <button
                   onClick={() => {
                     setIsAiOpen(!isAiOpen);
@@ -570,6 +765,7 @@ function Dashboard() {
                   <div className="absolute inset-0 rounded-full bg-blue-500/25 blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Brain size={24} className={`relative z-10 ${isAiOpen ? 'rotate-90' : 'animate-[spin_20s_linear_infinite]'}`} />
                 </button>
+                )}
               </motion.div>
               
               <AnimatePresence mode="wait">
@@ -584,7 +780,7 @@ function Dashboard() {
                     }}
                     exit={{ flex: 0, width: 0, opacity: 0 }}
                     transition={{ type: 'spring', damping: 35, stiffness: 300 }}
-                    className="h-full overflow-hidden flex"
+                    className="h-full overflow-hidden flex min-w-0"
                   >
                     {activeNode?.id === 'root-node' ? (
                       <WorkspaceView 
@@ -594,7 +790,14 @@ function Dashboard() {
                         }}
                         theme={theme}
                         workspace={activeWorkspace}
-                        nodes={dashboardNodes}
+                        isExpanded={isEditorExpanded}
+                        onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
+                        onOpenNode={openSearchResult}
+                        onChanged={reloadGraph}
+                        reloadKey={graphReloadKey}
+                        onRenamed={onWorkspaceRenamed}
+                        onDeleted={onWorkspaceDeleted}
+                        onShare={openShare}
                       />
                     ) : activeNode?.data?.type === 'cluster' ? (
                       <ClusterView 
@@ -604,6 +807,15 @@ function Dashboard() {
                         }}
                         theme={theme}
                         node={activeNode}
+                        workspace={activeWorkspace}
+                        isExpanded={isEditorExpanded}
+                        onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
+                        onOpenNode={openSearchResult}
+                        onChanged={reloadGraph}
+                        reloadKey={graphReloadKey}
+                        onDeleted={onClusterDeleted}
+                        notify={notify}
+                        readOnly={readOnly}
                       />
                     ) : (
                       <NotesEditor 
@@ -614,19 +826,25 @@ function Dashboard() {
                         theme={theme}
                         activeNode={activeNode}
                         workspaceId={activeWorkspace?.id}
+                        workspaceName={activeWorkspace?.name}
+                        onOpenNode={openSearchResult}
+                        onSaved={reloadGraph}
+                        onDeleted={onNoteDeleted}
+                        onMoved={onNoteMoved}
+                        readOnly={readOnly}
                         isExpanded={isEditorExpanded}
                         onToggleExpand={() => setIsEditorExpanded(!isEditorExpanded)}
                       />
                     )}
                   </motion.div>
-                ) : isAiOpen ? (
+                ) : AI_ENABLED && isAiOpen ? (
                   <motion.div 
                     key="metis-ai-view"
                     initial={{ flex: 0, width: 0, opacity: 0 }}
                     animate={{ flex: 1, width: 'auto', opacity: 1 }}
                     exit={{ flex: 0, width: 0, opacity: 0 }}
                     transition={{ type: 'spring', damping: 35, stiffness: 300 }}
-                    className="h-full overflow-hidden flex"
+                    className="h-full overflow-hidden flex min-w-0"
                   >
                     <MetisChat 
                       onClose={() => setIsAiOpen(false)}
@@ -637,6 +855,16 @@ function Dashboard() {
                 ) : null}
               </AnimatePresence>
             </>
+          ) : activeView === 'home' ? (
+            <MobileHome
+              theme={theme}
+              user={user}
+              workspaces={workspaces}
+              onOpenWorkspace={openWorkspace}
+              onOpenNote={openNoteFromHome}
+              onCreateWorkspace={() => setIsCreateModalOpen(true)}
+              onGoTo={goToView}
+            />
           ) : activeView === 'settings' ? (
             <SettingsView theme={theme} onClose={() => setActiveView('graph')} />
           ) : activeView === 'notifications' ? (
@@ -664,7 +892,7 @@ function Dashboard() {
           ) : activeView === 'system' ? (
             <System theme={theme} />
           ) : activeView === 'guide' ? (
-            <Guide theme={theme} onClose={() => setActiveView('graph')} />
+            <Guide theme={theme} onClose={() => setActiveView(isMobile ? 'home' : 'graph')} onNavigate={goToView} />
           ) : activeView === 'info' ? (
             <InfoPage theme={theme} onClose={() => setActiveView('graph')} />
           ) : null}
@@ -676,6 +904,46 @@ function Dashboard() {
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreateWorkspace}
         theme={theme}
+      />
+
+      <MobileTabBar
+        theme={theme}
+        activeView={activeView}
+        isMoreOpen={isMoreOpen}
+        onSelect={goToView}
+        onOpenMore={() => setIsMoreOpen(true)}
+      />
+
+      <Toast theme={theme} message={toast} />
+      {openShare && (
+        <ShareDialog
+          open={isShareOpen}
+          theme={theme}
+          workspace={activeWorkspace}
+          currentUser={user}
+          onClose={() => { setIsShareOpen(false); refreshWorkspaces() }}
+          onLeft={onLeftWorkspace}
+          onMyRoleChanged={refreshWorkspaces}
+          notify={notify}
+        />
+      )}
+
+      <MobileSearchSheet
+        isOpen={isSearchOpen}
+        theme={theme}
+        onClose={() => setIsSearchOpen(false)}
+        onSelect={openSearchResult}
+      />
+
+      <MobileMoreSheet
+        isOpen={isMoreOpen}
+        theme={theme}
+        user={user}
+        activeView={activeView}
+        onClose={() => setIsMoreOpen(false)}
+        onSelect={goToView}
+        onSetTheme={setTheme}
+        onLogout={() => { logout(); navigate('/login'); }}
       />
     </div>
   )
